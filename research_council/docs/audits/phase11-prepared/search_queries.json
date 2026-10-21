@@ -1,0 +1,227 @@
+[
+  {
+    "query_id": "8edda823-150e-58cd-aca5-53bc077f8d43",
+    "text": "compressed sensing frequency hopping signal detection",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "detection",
+    "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+  },
+  {
+    "query_id": "e8b8fbe7-0b06-51e1-8a21-00851f0671cd",
+    "text": "sparse recovery FHSS",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "detection",
+    "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+  },
+  {
+    "query_id": "0ba53fa5-52fb-5d68-8ee9-540a668ceb72",
+    "text": "sub-Nyquist frequency hopping",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "detection",
+    "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+  },
+  {
+    "query_id": "5230aedd-ab1d-539f-8e7d-125feb5a7386",
+    "text": "wideband sparse spectrum sensing",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "detection",
+    "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+  },
+  {
+    "query_id": "a75cc2a5-235f-5c59-bca7-2feaaccae75a",
+    "text": "compressed sensing direction of arrival",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "direction_finding",
+    "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+  },
+  {
+    "query_id": "29ef2a03-48c1-5bcc-91de-a69d91ce163f",
+    "text": "sparse DOA wideband",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "direction_finding",
+    "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+  },
+  {
+    "query_id": "b157c157-f70f-5842-bfae-4d948404e5e7",
+    "text": "joint sparse spectrum DOA",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "direction_finding",
+    "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+  },
+  {
+    "query_id": "ee98a431-54cc-57d8-903a-e47e405fc01b",
+    "text": "coherent multi-channel array processing",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "direction_finding",
+    "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+  },
+  {
+    "query_id": "f12d8ade-a143-559c-98fc-7f32d63efb34",
+    "text": "frequency hopping parameter estimation",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "parameters",
+    "provenance": "Phase 11 benchmark RQ3-RQ9"
+  },
+  {
+    "query_id": "fefaf3f3-cc95-5787-80da-67be6be6c671",
+    "text": "frequency hopping hop timing dwell time estimation",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "parameters",
+    "provenance": "Phase 11 benchmark RQ3-RQ9"
+  },
+  {
+    "query_id": "460d84b4-e47c-5fe1-ba2a-f494c753ba5f",
+    "text": "frequency hopping 1000 hops per second",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "parameters",
+    "provenance": "Phase 11 benchmark RQ3-RQ9"
+  },
+  {
+    "query_id": "cf7bbc42-c1e6-54db-a1cb-f5f9ff77a2e9",
+    "text": "FHSS detection FPGA",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "2866e990-3676-5980-9106-b1eb04b3ed68",
+    "text": "sparse recovery FPGA",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "cb69a32d-b930-5c53-a32d-3baca256745f",
+    "text": "OMP FPGA implementation",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "a5572925-4295-50cd-8764-386ef6445030",
+    "text": "CoSaMP FPGA",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "54504986-ce86-5414-a5d2-7df80f7dff69",
+    "text": "ADMM FPGA sparse recovery",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "dd82c3dc-d46a-5e80-8534-606356e3d22d",
+    "text": "compressed sensing SDR implementation",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "a85d65e1-9219-5ec1-a0f9-946950f3535e",
+    "text": "sub-Nyquist SDR spectrum sensing",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "cc0f01fd-65dc-55b5-9900-e75586cdca2a",
+    "text": "RFSoC sparse reconstruction",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "implementation",
+    "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+  },
+  {
+    "query_id": "f0b98d11-cf08-5806-bc02-06e78380319b",
+    "text": "UAV frequency hopping communication detection",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "application",
+    "provenance": "Phase 11 benchmark RQ8; alternative application terminology"
+  },
+  {
+    "query_id": "8d8496c6-4236-5925-bf1e-1f54170952fa",
+    "text": "drone RF signal detection sparse",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "application",
+    "provenance": "Phase 11 benchmark RQ8; alternative application terminology"
+  },
+  {
+    "query_id": "8af4aba5-70d7-549d-8753-20f2b656b66f",
+    "text": "compressive sampling multiband signals",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "older_and_mathematical",
+    "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+  },
+  {
+    "query_id": "81d5838c-25bf-5aa2-8be5-484b73b9f2c7",
+    "text": "modulated wideband converter",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "older_and_mathematical",
+    "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+  },
+  {
+    "query_id": "42b1cbc5-631b-566b-b511-1b97a15205b1",
+    "text": "sparse approximation restricted isometry coherence",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "older_and_mathematical",
+    "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+  },
+  {
+    "query_id": "dea53dc7-3fd1-5b59-ab85-e9a1c43ecc63",
+    "text": "matching pursuit direction finding interferometry",
+    "strategy": "targeted",
+    "adapter": "all",
+    "iteration": 0,
+    "family": "older_and_mathematical",
+    "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+  }
+]

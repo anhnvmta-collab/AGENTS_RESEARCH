@@ -1,0 +1,212 @@
+{
+  "run": {
+    "run_id": "d5146df9-2786-4176-9c3a-280dffbfc505",
+    "project_id": "8dc04535-982b-4cac-aeb4-48ea3b6e0671",
+    "question": {
+      "topic": "Compressed Sensing for Real-Time Detection, Parameter Estimation and DOA of FHSS UAV Signals on Coherent SDR/FPGA Platforms",
+      "constraints": [
+        "FHSS approximately 500–1000 hops/s",
+        "Coherent multi-channel receiver",
+        "Real-time processing",
+        "SDR/FPGA implementation",
+        "FPGA / RFSoC / Zynq-class platform",
+        "Cross-channel coherence and sparse recovery",
+        "Compressed Sensing",
+        "DOA estimation"
+      ],
+      "audit_claim": null
+    },
+    "mode": "novelty",
+    "status": "CREATED",
+    "stage": 0,
+    "workflow_version": 1,
+    "config_fingerprint": "f17ed2a4107d4b8160bbbaec9f247395563d63e40238c8533cf780fed6204043",
+    "provenance": "offline",
+    "budget_usd": 5.0,
+    "created_at": "2026-10-21T05:00:59.681671Z",
+    "updated_at": "2026-10-21T05:00:59.681671Z",
+    "warnings": []
+  },
+  "exported_at": "2026-10-21T05:00:59.754877+00:00",
+  "config_fingerprint": "f17ed2a4107d4b8160bbbaec9f247395563d63e40238c8533cf780fed6204043",
+  "publication_ready": false,
+  "novelty_iterations": 0,
+  "search_saturation": [],
+  "evidence_conflicts": [],
+  "targeted_search_requests": [],
+  "knowledge_map": null,
+  "workflow_events": [],
+  "source_chunks": [],
+  "model_calls": 0,
+  "search_attempts": [],
+  "input_tokens": 0,
+  "output_tokens": 0,
+  "estimated_cost_usd": 0,
+  "cost_complete": true,
+  "cost_includes_upper_bounds": false,
+  "gates": [
+    {
+      "gate_id": "ab23ac76-9ee6-4db7-83f2-8101b980059f",
+      "gate": 3,
+      "passed": false,
+      "reasons": [
+        "No primary scientific claims available.",
+        "Experimental plans require hypothesis, baselines, metrics, ablations, procedures, statistics, failure cases, acceptance criteria and reproducibility.",
+        "A linked paper roadmap is required.",
+        "No current contribution revision survives independent novelty checks."
+      ],
+      "checked_ids": [],
+      "created_at": "2026-10-21T05:00:59.726997Z",
+      "candidate_id": null,
+      "candidate_revision": null
+    }
+  ],
+  "files": {
+    "citation_audit.csv": "8d59048884907fea8325d83e003ee2465b0ea1a48603613392999aa13571fbd6",
+    "claims.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "closest_prior_art_matrix.csv": "5135f30d15143b601c4d416b7e5fa05e2ba0c98b1d00c14d9882e42c687acae5",
+    "core_papers.csv": "f53e2ebf5dde9cbc27ba78693fe99e7a34907c2857b4139bbe2ae0738a351b65",
+    "evidence.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "experiment_plan.md": "c99377adb6ce73e26cb93f583728a6837635f232622933a5e6319fa8b5228141",
+    "final_report.md": "c00eb0442f1a8d5d11e7b56adf97bb30354437e310eb9745fd5d33e41f9bf4d2",
+    "hardware_assumptions.csv": "5a354e7c3aa1617bf7590038a773c9c251851e80ebd3f050a424b75fac8ba138",
+    "hardware_feasibility.md": "b3c58f98b871cf4cfbdf2077f68be0656b359bf42b04c1e2f63f245bef2b344f",
+    "human_evidence_review_template.csv": "b296947198ce06f9462e716dd5053a4df822e6b3fd1c3a59cc226590d8b9a5fd",
+    "human_review/closest_prior_art.csv": "5135f30d15143b601c4d416b7e5fa05e2ba0c98b1d00c14d9882e42c687acae5",
+    "human_review/evidence_review.csv": "b296947198ce06f9462e716dd5053a4df822e6b3fd1c3a59cc226590d8b9a5fd",
+    "human_review/gap_review.md": "8224e22dbfbb812fde4d0812284535356ad8887764af55384ea1c6ab012683b8",
+    "human_review/hardware_review.md": "5c08f13cf67511cf074584b3863a2b593631e930e140c1920a0a20c151ea5fc6",
+    "human_review/model_disagreement.csv": "8f7f7264dee195cdb4fd264b8ffe31bb144604ee55f8f74505436edb857b6fdd",
+    "human_review/novelty_review.md": "6ebe5a8da57b940b4287ccb4f5affd6419e94eea1c4acfacd2c0d7c30e44042c",
+    "human_review/review_checklist.md": "ff686c5f69947d65d1337286dd86e86d52ee19d79ebcab6f74e4a7a23758ddbe",
+    "human_review/top_core_papers.csv": "44da119729d07550861e5f4fd2a5f587b3a0aa0b57aad357e2106aab90ad37f4",
+    "ieee_paper_plan.md": "0eaff7cf016acd0b8b0259c7c502c2181cbc1a236e1c6f42ec2884a32372fdcc",
+    "literature_matrix.csv": "076bb23924ee92471b852649b29a721dbd5535078fbbaa7ad65e357e47ca1c57",
+    "literature_matrix.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "literature_taxonomy.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "LIVE_SCIENTIFIC_VALIDATION.md": "e5502ad2aaf94dcc368c5712fbfdf9f2a7622f35bc7a141cd212b52cabf3538e",
+    "model_benchmark.csv": "915e30e91f7bc9e502ba79f54a0131addef2b62af718f65358c26ddbdc743b3d",
+    "novelty_candidates.md": "2b677a233441a3ccbe7d1dbb7d89666b31f579d47c49de035a09fed47d25833b",
+    "novelty_decisions.md": "bd4ac1978034a140743cf83a05857ea0c9a6d0b3a72b2c1dfe1762749a7c85e6",
+    "paper_candidates.csv": "5bccb5f810a0048076067a3ea9dd03b116d0d501cb72f2e21cefb4aabd95b225",
+    "prior_art_report.md": "eb6554ccc9be2a767966aff68b172dc7d65e9814263726f201059f73306fd72a",
+    "provider_independence.csv": "0cd90179f6e6ef82afcb625dcf126b06e1dca20cc48b09e39f5c3c63a5e55df7",
+    "research_gaps.md": "2af5debccab90eb36a23d924a22e34ce3832cca313864325b022afc975b2f331",
+    "research_plan.json": "cfb47ec7db88cba6edad6e43dca3a3c844ef8e9615c4e3af5ddd48d33b9aaa0f",
+    "reviewer_report.md": "92368d55e83a484b9485755f6fc3cc911de63147266f1ef68b5795b949ff5ff3",
+    "scientific_metrics.json": "553761dd52d3c21c3ffb86fd554347b28b6a178bd5634d68b954c2e580f5a490",
+    "scientific_reproducibility.json": "0528c45fc6bee082a481c45d58b277006f1290514bdd4b08b867e96ffcfbcdb8",
+    "search_queries.json": "adb7c9bad6f69ca57f87a29c2dc64904410d5acf1ff17b422c6a66bac0648b70",
+    "search_rounds.csv": "360787f7d194f09629e14057424b2358a4ee271542eef8d5b63ae6dfac06a83c"
+  },
+  "scientific_validation": {
+    "coverage": {
+      "measurement_status": "NOT_EXECUTED",
+      "seed_paper_recall": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "method_family_recall": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "concept_coverage": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "citation_chain_recovery": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "matched_seeds": [],
+      "observed_method_families": [],
+      "observed_concepts": [],
+      "limitation": "Nonexhaustive seed set; lexical family/concept proxies within observed metadata/evidence, not universal completeness."
+    },
+    "coverage_values": {
+      "seed_paper_recall": null,
+      "method_family_recall": null,
+      "concept_coverage": null,
+      "citation_chain_recovery": null
+    },
+    "quality": {
+      "metrics": {
+        "evidence_location_rate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "evidence_grounding_rate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "evidence_entailment_accuracy": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_location_accuracy": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "evidence_contradiction_detection_rate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unsupported_claim_rate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "structurally_unsupported_claim_rate": {
+          "numerator": 0,
+          "denominator": 0
+        }
+      },
+      "definitions": {
+        "evidence_location_rate": "Traceable page/section/abstract/offset location availability; not human correctness.",
+        "evidence_grounding_rate": "Quote found at the recorded source location, not semantic entailment.",
+        "evidence_entailment_accuracy": "Positive independently completed human entailment judgments / completed judgments.",
+        "human_location_accuracy": "Correct human-reviewed locations / completed location judgments.",
+        "evidence_contradiction_detection_rate": "Detected gold-positive contradictory claims / human-labelled contradictory claims.",
+        "unsupported_claim_rate": "Human-labelled unsupported primary claims / independently labelled primary claims.",
+        "structurally_unsupported_claim_rate": "Primary claim support missing from actual evidence / primary non-hypothesis claims."
+      },
+      "limitations": [
+        "No human judgments are inferred from LLM confidence.",
+        "Missing/empty independent labels produce null ratios.",
+        "Fixtures are excluded from scientific metric denominators."
+      ]
+    },
+    "quality_values": {
+      "evidence_location_rate": null,
+      "evidence_grounding_rate": null,
+      "evidence_entailment_accuracy": null,
+      "human_location_accuracy": null,
+      "evidence_contradiction_detection_rate": null,
+      "unsupported_claim_rate": null,
+      "structurally_unsupported_claim_rate": null
+    },
+    "scientific_readiness": {
+      "run_id": "d5146df9-2786-4176-9c3a-280dffbfc505",
+      "level": 0,
+      "history": []
+    },
+    "readiness_facts": {
+      "successful_live_model_calls": 0,
+      "successful_scholarly_operations": 0,
+      "real_papers": 0,
+      "core_papers": 0,
+      "verified_core_identities": 0,
+      "real_evidence": 0,
+      "correct_human_sampled_evidence": 0,
+      "gaps": 0,
+      "expert_approved_gaps": 0,
+      "automated_survivors": 0,
+      "independent_review_models": 0,
+      "expert_approved_survivors": 0,
+      "unresolved_high_disagreements": 0,
+      "validated_experiments": 0,
+      "independent_replications": 0
+    },
+    "phase_status": "PHASE_11_IMPLEMENTED",
+    "live_status": "LIVE_VALIDATION_NOT_YET_EXECUTED"
+  }
+}

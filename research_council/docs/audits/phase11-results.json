@@ -1,0 +1,62 @@
+{
+  "created_at": "2026-10-21T05:01:47.155071+00:00",
+  "base_commit": "b992b9fbb6125cd1ec177b49b3a4e604291386bb",
+  "branch": "phase-11-live-validation",
+  "source_commit_used_for_wheel_preparation": "bf3c8de03b0a7b227efb52dec268137bd01f733f",
+  "source_working_tree_dirty_at_execution": false,
+  "source_tree_sha256": "ea28d7bdb13c30797f5d525b54508f91777cdb1b3ef33f0a114ff1ac5e091daa",
+  "offline_tests": {
+    "passed": 159,
+    "failed": 0,
+    "errors": 0,
+    "baseline_passed": 113,
+    "phase11_passed": 46,
+    "live_deselected": 2,
+    "junit": "phase11-offline.xml"
+  },
+  "checks": {
+    "ruff_format": "PASS",
+    "ruff_check": "PASS",
+    "mypy": "PASS",
+    "mypy_source_files": 100,
+    "git_diff_check": "PASS"
+  },
+  "installed_wheel": {
+    "path": "dist\\phase11\\research_council-1.0.0-py3-none-any.whl",
+    "sha256": "709a685ff644611e70787ea3a6a15eab465117d4fd097bb80d9ded253dcc5f6f",
+    "installed_package": "D:\\AGENTS_RESEARCH\\research_council\\.acceptance-env\\Lib\\site-packages\\research_council",
+    "all_100_source_files_equal_to_checkout": true,
+    "pip_check": "PASS",
+    "packaged_benchmark": true,
+    "packaged_migrations": true
+  },
+  "preparation": {
+    "run_id": "d5146df9-2786-4176-9c3a-280dffbfc505",
+    "archive": "phase11-prepared",
+    "report_sections": 23,
+    "human_review_files": [
+      "closest_prior_art.csv",
+      "evidence_review.csv",
+      "gap_review.md",
+      "hardware_review.md",
+      "model_disagreement.csv",
+      "novelty_review.md",
+      "review_checklist.md",
+      "top_core_papers.csv"
+    ],
+    "manifest_verified_files": 36,
+    "keys_removed_from_child_environment": true,
+    "scientific_readiness_level": "SRL-0",
+    "live_model_calls": 0,
+    "live_scholarly_operations": 0,
+    "live_tests_executed": false,
+    "estimated_model_cost_usd": 0,
+    "paid_benchmark_cost_incurred_usd": 0,
+    "actual_invoice_queried": false,
+    "actual_billed_cost_usd": null
+  },
+  "phase_status": "PHASE_11_IMPLEMENTED",
+  "live_status": "LIVE_VALIDATION_NOT_YET_EXECUTED",
+  "acceptance_scope": "22 A-V software criteria documented in ../PHASE_11_VALIDATION.md; this does not assert scientific validation.",
+  "public_source_curation": "Primary arXiv/publisher pages consulted for three seed identities; separate from benchmark execution."
+}

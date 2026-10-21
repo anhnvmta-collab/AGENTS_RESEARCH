@@ -1,0 +1,110 @@
+{
+  "coverage": {
+    "measurement_status": "NOT_EXECUTED",
+    "seed_paper_recall": {
+      "numerator": 0,
+      "denominator": 0
+    },
+    "method_family_recall": {
+      "numerator": 0,
+      "denominator": 0
+    },
+    "concept_coverage": {
+      "numerator": 0,
+      "denominator": 0
+    },
+    "citation_chain_recovery": {
+      "numerator": 0,
+      "denominator": 0
+    },
+    "matched_seeds": [],
+    "observed_method_families": [],
+    "observed_concepts": [],
+    "limitation": "Nonexhaustive seed set; lexical family/concept proxies within observed metadata/evidence, not universal completeness."
+  },
+  "coverage_values": {
+    "seed_paper_recall": null,
+    "method_family_recall": null,
+    "concept_coverage": null,
+    "citation_chain_recovery": null
+  },
+  "quality": {
+    "metrics": {
+      "evidence_location_rate": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "evidence_grounding_rate": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "evidence_entailment_accuracy": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "human_location_accuracy": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "evidence_contradiction_detection_rate": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "unsupported_claim_rate": {
+        "numerator": 0,
+        "denominator": 0
+      },
+      "structurally_unsupported_claim_rate": {
+        "numerator": 0,
+        "denominator": 0
+      }
+    },
+    "definitions": {
+      "evidence_location_rate": "Traceable page/section/abstract/offset location availability; not human correctness.",
+      "evidence_grounding_rate": "Quote found at the recorded source location, not semantic entailment.",
+      "evidence_entailment_accuracy": "Positive independently completed human entailment judgments / completed judgments.",
+      "human_location_accuracy": "Correct human-reviewed locations / completed location judgments.",
+      "evidence_contradiction_detection_rate": "Detected gold-positive contradictory claims / human-labelled contradictory claims.",
+      "unsupported_claim_rate": "Human-labelled unsupported primary claims / independently labelled primary claims.",
+      "structurally_unsupported_claim_rate": "Primary claim support missing from actual evidence / primary non-hypothesis claims."
+    },
+    "limitations": [
+      "No human judgments are inferred from LLM confidence.",
+      "Missing/empty independent labels produce null ratios.",
+      "Fixtures are excluded from scientific metric denominators."
+    ]
+  },
+  "quality_values": {
+    "evidence_location_rate": null,
+    "evidence_grounding_rate": null,
+    "evidence_entailment_accuracy": null,
+    "human_location_accuracy": null,
+    "evidence_contradiction_detection_rate": null,
+    "unsupported_claim_rate": null,
+    "structurally_unsupported_claim_rate": null
+  },
+  "scientific_readiness": {
+    "run_id": "d5146df9-2786-4176-9c3a-280dffbfc505",
+    "level": 0,
+    "history": []
+  },
+  "readiness_facts": {
+    "successful_live_model_calls": 0,
+    "successful_scholarly_operations": 0,
+    "real_papers": 0,
+    "core_papers": 0,
+    "verified_core_identities": 0,
+    "real_evidence": 0,
+    "correct_human_sampled_evidence": 0,
+    "gaps": 0,
+    "expert_approved_gaps": 0,
+    "automated_survivors": 0,
+    "independent_review_models": 0,
+    "expert_approved_survivors": 0,
+    "unresolved_high_disagreements": 0,
+    "validated_experiments": 0,
+    "independent_replications": 0
+  },
+  "phase_status": "PHASE_11_IMPLEMENTED",
+  "live_status": "LIVE_VALIDATION_NOT_YET_EXECUTED"
+}

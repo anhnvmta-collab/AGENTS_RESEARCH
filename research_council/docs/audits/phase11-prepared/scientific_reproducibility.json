@@ -1,0 +1,301 @@
+{
+  "run_id": "d5146df9-2786-4176-9c3a-280dffbfc505",
+  "created_at": "2026-10-21T05:00:59.873016+00:00",
+  "commit_sha": "bf3c8de03b0a7b227efb52dec268137bd01f733f",
+  "working_tree_dirty": false,
+  "source_tree_sha256": "ea28d7bdb13c30797f5d525b54508f91777cdb1b3ef33f0a114ff1ac5e091daa",
+  "config_hash": "f17ed2a4107d4b8160bbbaec9f247395563d63e40238c8533cf780fed6204043",
+  "benchmark_hash": "78091e978f0f9840d6d5e5d4e6b72136e70610a0664f63e010206170ac7f2d7d",
+  "workflow_version": 1,
+  "state_schema_version": 1,
+  "prompt_versions": {
+    "citation_auditor.md": "f35a249cab5696c86cec6f9f6f18d18623fcda7a6972dab02c592d1d0d573f4b",
+    "citation_scout.md": "c093be7d7aeffe8f8807067a0002fe85721e3d6840eb2127ea53f9eae00a0772",
+    "deep_reader.md": "e71d2c156c75a436b312e680d4502ce36a0d528c19ec59f19916e14a6acf90ad",
+    "experiment_designer.md": "3dc1f9a2dbcaa32ce7658983cd92aca12b6fa9d00a61d1aac20c9b3f2b068a77",
+    "final_synthesizer.md": "77ce21c98e28456e53d9e98bd7c81a1bcb31627d35bf92435929f03c1cb2495d",
+    "gap_miner.md": "7f8bb2c357d91381ea734c8e9db09adca4cdf2415c32931c330567660f88faf3",
+    "hardware_architect.md": "f2f4adbbe14018c88ab5fe725fe2424a93178b7208d5c7dbcc9df78977dd91bf",
+    "local_document_scout.md": "d776fe71e14ebd090ff7b2ff4baab15be219b805bfdf49bdcb88da69a2821116",
+    "math_dsp_analyst.md": "b4d5b783728959b798f6e551435b44481b9953f8523e9da4217d5d89f4be36b6",
+    "novelty_generator.md": "a278916107e648928bad398a548564d29127adf22996e69881ba7c1c7f78a4da",
+    "novelty_judge.md": "8dc1a5de59a693a06148958e5e2ca3cd98ca165b78a5ac81cae8fdbdd0e45e6e",
+    "paper_architect.md": "471bb6eca60c6a88b28d422c823c458954f168df25db4cc531c99f26fe9258c1",
+    "paper_scout.md": "9f8efd3d62c1be49918b3c97575c937756a98ddf121eca54fbbe3a1f87c6ca55",
+    "paper_triage.md": "864a04ecb09261156ab864e65bd85ab26e47d5008aa2a0b013156074c0cd119f",
+    "perspective_generator.md": "ee42ae4ada450af3c11aafcd61571878221bb6fe4f294a78a46e388d4265a6b6",
+    "prior_art_hunter.md": "34f9a83d93be82c68c9b45f36076389f2b6ca44bcef9aa8976b544a2c62f7f72",
+    "query_planner.md": "a9ceb2749e0c9a9686c406969b3d0fdb073b350fdd786dd2bc59305a950d9f63",
+    "research_director.md": "4b89f6120ad5a54503bbd77c4bdebcebcfe2cdf360da597c6badbda8af5d8a73",
+    "research_planner.md": "dc9be2c99b9a2882f034b5d9040e5eaf3cb2f6ba132fe09f4b5cc2c5900e3a11",
+    "reviewer_two.md": "80fed4e67652e08ecec173e2e988600d9faebcd484d8baa233b659661706c448"
+  },
+  "search_sources": [],
+  "queries": [
+    {
+      "query_id": "8edda823-150e-58cd-aca5-53bc077f8d43",
+      "text": "compressed sensing frequency hopping signal detection",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "detection",
+      "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+    },
+    {
+      "query_id": "e8b8fbe7-0b06-51e1-8a21-00851f0671cd",
+      "text": "sparse recovery FHSS",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "detection",
+      "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+    },
+    {
+      "query_id": "0ba53fa5-52fb-5d68-8ee9-540a668ceb72",
+      "text": "sub-Nyquist frequency hopping",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "detection",
+      "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+    },
+    {
+      "query_id": "5230aedd-ab1d-539f-8e7d-125feb5a7386",
+      "text": "wideband sparse spectrum sensing",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "detection",
+      "provenance": "Phase 11 benchmark RQ1; operator-defined coverage probe"
+    },
+    {
+      "query_id": "a75cc2a5-235f-5c59-bca7-2feaaccae75a",
+      "text": "compressed sensing direction of arrival",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "direction_finding",
+      "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+    },
+    {
+      "query_id": "29ef2a03-48c1-5bcc-91de-a69d91ce163f",
+      "text": "sparse DOA wideband",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "direction_finding",
+      "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+    },
+    {
+      "query_id": "b157c157-f70f-5842-bfae-4d948404e5e7",
+      "text": "joint sparse spectrum DOA",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "direction_finding",
+      "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+    },
+    {
+      "query_id": "ee98a431-54cc-57d8-903a-e47e405fc01b",
+      "text": "coherent multi-channel array processing",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "direction_finding",
+      "provenance": "Phase 11 benchmark RQ4-RQ5; complementary array terminology"
+    },
+    {
+      "query_id": "f12d8ade-a143-559c-98fc-7f32d63efb34",
+      "text": "frequency hopping parameter estimation",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "parameters",
+      "provenance": "Phase 11 benchmark RQ3-RQ9"
+    },
+    {
+      "query_id": "fefaf3f3-cc95-5787-80da-67be6be6c671",
+      "text": "frequency hopping hop timing dwell time estimation",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "parameters",
+      "provenance": "Phase 11 benchmark RQ3-RQ9"
+    },
+    {
+      "query_id": "460d84b4-e47c-5fe1-ba2a-f494c753ba5f",
+      "text": "frequency hopping 1000 hops per second",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "parameters",
+      "provenance": "Phase 11 benchmark RQ3-RQ9"
+    },
+    {
+      "query_id": "cf7bbc42-c1e6-54db-a1cb-f5f9ff77a2e9",
+      "text": "FHSS detection FPGA",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "2866e990-3676-5980-9106-b1eb04b3ed68",
+      "text": "sparse recovery FPGA",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "cb69a32d-b930-5c53-a32d-3baca256745f",
+      "text": "OMP FPGA implementation",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "a5572925-4295-50cd-8764-386ef6445030",
+      "text": "CoSaMP FPGA",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "54504986-ce86-5414-a5d2-7df80f7dff69",
+      "text": "ADMM FPGA sparse recovery",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "dd82c3dc-d46a-5e80-8534-606356e3d22d",
+      "text": "compressed sensing SDR implementation",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "a85d65e1-9219-5ec1-a0f9-946950f3535e",
+      "text": "sub-Nyquist SDR spectrum sensing",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "cc0f01fd-65dc-55b5-9900-e75586cdca2a",
+      "text": "RFSoC sparse reconstruction",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "implementation",
+      "provenance": "Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology"
+    },
+    {
+      "query_id": "f0b98d11-cf08-5806-bc02-06e78380319b",
+      "text": "UAV frequency hopping communication detection",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "application",
+      "provenance": "Phase 11 benchmark RQ8; alternative application terminology"
+    },
+    {
+      "query_id": "8d8496c6-4236-5925-bf1e-1f54170952fa",
+      "text": "drone RF signal detection sparse",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "application",
+      "provenance": "Phase 11 benchmark RQ8; alternative application terminology"
+    },
+    {
+      "query_id": "8af4aba5-70d7-549d-8753-20f2b656b66f",
+      "text": "compressive sampling multiband signals",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "older_and_mathematical",
+      "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+    },
+    {
+      "query_id": "81d5838c-25bf-5aa2-8be5-484b73b9f2c7",
+      "text": "modulated wideband converter",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "older_and_mathematical",
+      "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+    },
+    {
+      "query_id": "42b1cbc5-631b-566b-b511-1b97a15205b1",
+      "text": "sparse approximation restricted isometry coherence",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "older_and_mathematical",
+      "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+    },
+    {
+      "query_id": "dea53dc7-3fd1-5b59-ab85-e9a1c43ecc63",
+      "text": "matching pursuit direction finding interferometry",
+      "strategy": "targeted",
+      "adapter": "all",
+      "iteration": 0,
+      "family": "older_and_mathematical",
+      "provenance": "Phase 11 terminology-bias control; mathematical and older terminology"
+    }
+  ],
+  "search_attempts": [],
+  "paper_identities": [],
+  "identity_audits": [],
+  "evidence_hashes": {},
+  "source_hashes": {},
+  "model_executions": [],
+  "budget": {
+    "max_total_cost": 5.0,
+    "max_model_calls": 80,
+    "max_search_calls": 1000,
+    "max_core_papers": 12,
+    "max_deep_reads": 12,
+    "max_novelty_iterations": 3
+  },
+  "estimated_model_cost_usd": 0,
+  "actual_billed_cost_usd": null,
+  "live_execution": false,
+  "human_judgments_inferred": false,
+  "interpretation": "Reproducibility record, not proof of scientific correctness. Unknown installed-source commit IDs remain null; source and prompt hashes are retained.",
+  "planned_config_sha256": "ddd4593fcb9c6ad5c04c5b4affbae127e9e0c1b9ac78a3537534eae82695dba3",
+  "review_bundle_sha256": null,
+  "budget_usage": {
+    "model_calls": 0,
+    "search_calls": 0,
+    "core_papers": 0,
+    "deep_reads": 0,
+    "novelty_iterations": 0,
+    "estimated_cost": 0.0,
+    "reserved_cost": 0.0,
+    "exhausted": false,
+    "reasons": []
+  },
+  "evidence_sample_seed": 11,
+  "curated_seed_ids": [
+    "cosamp_needell_tropp_2008",
+    "mishali_eldar_mwc_2009",
+    "nguyen_omp_hardware_2020"
+  ],
+  "curation_is_benchmark_execution": false,
+  "citation_observations": []
+}

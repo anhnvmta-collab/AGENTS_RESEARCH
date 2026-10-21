@@ -1,0 +1,9 @@
+task_profile,provider,model,attempts,completed_attempts,latency_mean_seconds,input_tokens,output_tokens,estimated_cost_usd,structured_output_validity,retry_count,failure_rate,actual_billed_cost_usd,accuracy,technical_depth,evidence_fidelity,novelty_usefulness,reviewer_strength
+ADVERSARIAL_REVIEW,fake,offline,0,0,,,,,,0,,,,,,,
+CITATION_VERIFICATION,fake,offline,0,0,,,,,,0,,,,,,,
+HARDWARE_REASONING,fake,offline,0,0,,,,,,0,,,,,,,
+MATH_REASONING,fake,offline,0,0,,,,,,0,,,,,,,
+NOVELTY_GENERATION,fake,offline,0,0,,,,,,0,,,,,,,
+PAPER_EXTRACTION,fake,offline,0,0,,,,,,0,,,,,,,
+SEARCH_PLANNING,fake,offline,0,0,,,,,,0,,,,,,,
+SYNTHESIS,fake,offline,0,0,,,,,,0,,,,,,,

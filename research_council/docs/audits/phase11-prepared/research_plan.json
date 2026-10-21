@@ -1,0 +1,61 @@
+{
+  "objective": "Compressed Sensing for Real-Time Detection, Parameter Estimation and DOA of FHSS UAV Signals on Coherent SDR/FPGA Platforms",
+  "tasks": [],
+  "inclusion_criteria": [],
+  "exclusion_criteria": [],
+  "limitations": [
+    "Prepared input questions; no live model has produced this plan."
+  ],
+  "subquestions": {
+    "RQ1": {
+      "topic": "What compressed sensing approaches exist for wideband or FHSS signal detection?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ2": {
+      "topic": "Which sparse recovery algorithms have demonstrated sufficient complexity for real-time implementation?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ3": {
+      "topic": "Which methods estimate carrier frequency, hop timing, duration, sequence and band occupancy jointly or sequentially?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ4": {
+      "topic": "Which methods combine sparse sensing with direction-of-arrival estimation?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ5": {
+      "topic": "Which approaches support coherent multi-channel receivers?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ6": {
+      "topic": "Which approaches have FPGA, SDR, GPU or RFSoC implementations?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ7": {
+      "topic": "What are the primary computational and memory bottlenecks?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ8": {
+      "topic": "Which prior work specifically targets UAV communication signals?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ9": {
+      "topic": "Which work operates near 500-1000 hops/s and under what assumptions?",
+      "constraints": [],
+      "audit_claim": null
+    },
+    "RQ10": {
+      "topic": "Which scoped scientific gaps remain after the closest prior art is considered?",
+      "constraints": [],
+      "audit_claim": null
+    }
+  }
+}
