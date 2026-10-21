@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from research_council.agents.contracts import ReadingOutput
+from typing import TYPE_CHECKING
+
 from research_council.schemas.models import (
     ClaimType,
     Evidence,
@@ -8,6 +9,9 @@ from research_council.schemas.models import (
     ResearchClaim,
     VerificationStatus,
 )
+
+if TYPE_CHECKING:
+    from research_council.agents.contracts import ReadingOutput
 
 
 def grounded_excerpt(paper: Paper, evidence: Evidence) -> bool:

@@ -13,6 +13,7 @@ class GoldLabels(Schema):
     paper_exists: dict[UUID, bool] = Field(default_factory=dict)
     paper_identity_correct: dict[UUID, bool] = Field(default_factory=dict)
     candidate_is_novel: dict[UUID, bool] = Field(default_factory=dict)
+    candidate_revision_is_novel: dict[str, bool] = Field(default_factory=dict)
     annotated_by: str = ""
 
 
@@ -22,6 +23,9 @@ class HumanScores(Schema):
     technical_depth: Score | None = None
     novelty_usefulness: Score | None = None
     hardware_feasibility: Score | None = None
+    research_usefulness: Score | None = None
+    hardware_realism: Score | None = None
+    publication_readiness: Score | None = None
     notes: str = ""
 
 
@@ -63,8 +67,34 @@ def evaluate(
         item.paper_id in papers and grounded_excerpt(papers[item.paper_id], item)
         for item in state.evidence
     )
-    accepted = {item.candidate_id for item in state.decisions if item.verdict == "SURVIVE"}
-    non_novel = {identity for identity, novel in labels.candidate_is_novel.items() if not novel}
+    latest = {
+        item.candidate_id: max(
+            other.revision
+            for other in state.novelty_candidates
+            if other.candidate_id == item.candidate_id
+        )
+        for item in state.novelty_candidates
+    }
+    accepted = {
+        (item.candidate_id, item.revision)
+        for item in state.decisions
+        if item.verdict == "SURVIVE"
+        and item.revision == latest.get(item.candidate_id)
+        and any(
+            gate.gate == 2
+            and gate.passed
+            and gate.candidate_id == item.candidate_id
+            and gate.candidate_revision == item.revision
+            for gate in state.gates
+        )
+    }
+    annotated = {
+        (identity, revision): labels.candidate_revision_is_novel.get(
+            f"{identity}:{revision}", labels.candidate_is_novel.get(identity)
+        )
+        for identity, revision in latest.items()
+    }
+    non_novel = {key for key, novel in annotated.items() if novel is False}
     model_count = len(model_executions)
     cost_complete = all(item.estimated_cost is not None for item in model_executions)
     metrics = {
@@ -90,8 +120,23 @@ def evaluate(
         if agent_executions
         else None,
         "cost_per_run_usd": sum(item.estimated_cost or 0 for item in model_executions)
-        if cost_complete
+        if cost_complete and model_count
         else None,
+        "input_tokens": float(sum(item.input_tokens for item in model_executions))
+        if model_count
+        else None,
+        "output_tokens": float(sum(item.output_tokens for item in model_executions))
+        if model_count
+        else None,
+        "total_tokens": float(
+            sum(item.input_tokens + item.output_tokens for item in model_executions)
+        )
+        if model_count
+        else None,
+        "core_paper_evidence_coverage": ratio(
+            len(set(state.core_paper_ids) & {item.paper_id for item in state.evidence}),
+            len(state.core_paper_ids),
+        ),
     }
     denominators = {
         "citation_precision": len(evaluated_refs),
@@ -102,6 +147,11 @@ def evaluate(
         "structured_output_success": model_count,
         "novelty_false_positive_rate": len(non_novel),
         "agent_latency_mean_seconds": len(agent_executions),
+        "input_tokens": model_count,
+        "output_tokens": model_count,
+        "total_tokens": model_count,
+        "cost_per_run_usd": model_count,
+        "core_paper_evidence_coverage": len(state.core_paper_ids),
     }
     definitions = {
         "citation_precision": "Existing unique primary cited paper IDs / gold-labelled primary cited IDs. Existence does not measure entailment.",
@@ -110,9 +160,13 @@ def evaluate(
         "evidence_grounding_rate": "Evidence excerpts found at the stated source location / evidence objects.",
         "hallucinated_reference_rate": "Nonexistent gold-labelled primary references / gold-labelled primary references.",
         "structured_output_success": "Locally valid model attempts / all model attempts, including retries.",
-        "novelty_false_positive_rate": "Accepted gold-labelled non-novel candidates / all labelled non-novel candidates.",
+        "novelty_false_positive_rate": "Latest candidate revisions with matching SURVIVE decision and passed Gate 2 labelled non-novel / labelled non-novel latest revisions. Revision labels use UUID:revision; candidate-only labels apply to latest revision.",
         "agent_latency_mean_seconds": "Mean recorded agent execution duration, including failed executions.",
         "cost_per_run_usd": "Sum of configured-price provider estimates; null if any attempt cost is unknown.",
+        "input_tokens": "Sum of recorded input tokens across attempts; unavailable usage can be zero, see limitations.",
+        "output_tokens": "Sum of recorded output tokens across attempts.",
+        "total_tokens": "Recorded input plus output tokens across all attempts, including retries.",
+        "core_paper_evidence_coverage": "Selected core papers with extracted evidence / selected core papers.",
     }
     return EvaluationReport(
         metrics=metrics,
@@ -124,5 +178,6 @@ def evaluate(
             "Quotation matching does not establish semantic entailment.",
             f"Existence labels cover {len(evaluated_refs)} of {len(references)} primary cited papers.",
             "Fixture metrics validate software behavior only.",
+            "Costs may include conservative reservation bounds when provider usage is unavailable; token totals then represent reported usage only.",
         ],
     )

@@ -2,11 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from research_council.core.orchestration.state import WorkflowState
-
-from typing import TYPE_CHECKING
-
 from research_council.core.grounding import grounded_excerpt
 from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.schemas.models import (
@@ -27,6 +22,7 @@ from research_council.schemas.models import (
 
 if TYPE_CHECKING:
     from research_council.agents.contracts import PaperOutline
+    from research_council.core.orchestration.state import WorkflowState
 
 
 class SourceIntegrityGate:
@@ -141,6 +137,17 @@ class NoveltySurvivalGate:
             reasons.append("Prior art invalidates the novelty claim.")
         if any(match.severity == "HIGH" for match in prior_art.matches):
             reasons.append("High-severity prior-art overlap remains unresolved.")
+        evidence_map = {item.evidence_id: item for item in evidence}
+        if any(
+            not match.overlap_components
+            or not match.evidence_ids
+            or any(
+                identity not in evidence_map or evidence_map[identity].paper_id != match.paper_id
+                for identity in match.evidence_ids
+            )
+            for match in prior_art.matches
+        ):
+            reasons.append("Prior-art overlap matrix lacks traceable source-specific evidence.")
         if any(
             item.severity == "HIGH"
             and item.resolution_status != "RESOLVED"

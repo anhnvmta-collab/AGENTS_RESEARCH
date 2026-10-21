@@ -1,7 +1,7 @@
 from research_council.agents.base import BaseResearchAgent
 from research_council.agents.contracts import AnalysisInput, MathOutput
 from research_council.core.grounding import validate_analysis_claims
-from research_council.schemas.models import TaskProfile
+from research_council.schemas.models import ClaimType, TaskProfile
 
 
 class MathDSPAnalyst(BaseResearchAgent[AnalysisInput, MathOutput]):
@@ -15,5 +15,9 @@ class MathDSPAnalyst(BaseResearchAgent[AnalysisInput, MathOutput]):
 
     async def execute(self, value: AnalysisInput) -> MathOutput:
         output = await super().execute(value)
+        if any(claim.claim_type == ClaimType.AUTHOR_REPORTED for claim in output.claims):
+            raise ValueError(
+                "Mathematical analysis must classify new conclusions as DERIVED, AGENT_ANALYSIS or HYPOTHESIS"
+            )
         output.claims = validate_analysis_claims(output.claims, value.evidence)
         return output

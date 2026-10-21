@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
+from research_council.core.config import Settings
 from research_council.core.gates import publication_gate
 from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.core.orchestration.engine import RunLease
@@ -82,6 +83,9 @@ def attest_claim(
             state,
             repository.list_model_executions(run_id),
             require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
+            minimum_evidence=Settings.model_validate(
+                repository.artifacts(run_id).get("settings", {})
+            ).research.min_novelty_evidence,
         )
         state.gates.append(gate)
         repository.save("approvals", uuid4(), attestation, run_id)

@@ -1,0 +1,127 @@
+{
+  "created_at": "2026-10-21T03:13:18.090999+00:00",
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "python_prefix": "D:\\AGENTS_RESEARCH\\research_council\\.acceptance-env",
+  "installed_package": "D:\\AGENTS_RESEARCH\\research_council\\.acceptance-env\\Lib\\site-packages\\research_council\\__init__.py",
+  "workspace": "D:\\AGENTS_RESEARCH\\research_council\\workspace\\acceptance\\cfecee95-5748-4592-9e41-e79533135823",
+  "criteria": {
+    "A": {
+      "status": "PASS",
+      "evidence": "New isolated virtual environment, installed wheel from site-packages, packaged prompts/migrations, pip check passed; no editable import."
+    },
+    "B": {
+      "status": "PASS",
+      "evidence": "SQLite initialized from empty database, including scientific graph tables."
+    },
+    "C": {
+      "status": "PASS",
+      "evidence": "Empty database -> Alembic 0002 -> base -> head succeeded."
+    },
+    "D": {
+      "status": "PASS",
+      "evidence": "All four installed-wheel modes used FakeProvider; provider key variables were removed in this process."
+    },
+    "E": {
+      "status": "PASS",
+      "evidence": "Installed wheel completed quick using FakeProvider without API keys; 19 exports verified. Run 40582885-5f05-49b8-9eab-718597ffc896."
+    },
+    "F": {
+      "status": "PASS",
+      "evidence": "Installed wheel completed review using FakeProvider without API keys; 19 exports verified. Run 7fe3cee8-bcdf-4e25-8903-0be5831d21b2."
+    },
+    "G": {
+      "status": "PASS",
+      "evidence": "Installed wheel completed deep using FakeProvider without API keys; 19 exports verified. Run a908b122-fa6f-4a89-a096-4ccb3992294c."
+    },
+    "H": {
+      "status": "PASS",
+      "evidence": "Installed wheel completed novelty using FakeProvider without API keys; 19 exports verified. Run 0ddb056f-c109-44ff-86c6-ee387a52b8fc."
+    },
+    "I": {
+      "status": "PASS",
+      "evidence": "Observed 2 simultaneous fake cognitive calls; independent branch/partial-failure tests also required below."
+    },
+    "J": {
+      "status": "PASS",
+      "evidence": "Nonempty evidence-to-paper graph with source chunks, offsets and hashes passed validate_graph."
+    },
+    "K": {
+      "status": "PASS",
+      "evidence": "Nonempty claims resolve supporting evidence in installed-wheel workflow."
+    },
+    "L": {
+      "status": "PASS",
+      "evidence": "Gaps resolve evidence/claims; invalid graph-edge parameter tests are required below."
+    },
+    "M": {
+      "status": "PASS",
+      "evidence": "Every nonempty candidate revision resolves its research gaps and explicit hypothesis claim."
+    },
+    "N": {
+      "status": "PASS",
+      "evidence": "PriorArtHunter model execution and operational query/citation attempts persisted."
+    },
+    "O": {
+      "status": "PASS",
+      "evidence": "ReviewerTwo executed independently; context-isolation and alternate-provider routing tests required below."
+    },
+    "P": {
+      "status": "PASS",
+      "evidence": "Novelty terminated after 3 bounded iterations, without promoting fixture novelty."
+    },
+    "Q": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_source_integrity"
+    },
+    "R": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_novelty_gate_rejects_incomplete_and_severe_reviews, test_resume_does_not_trust_cached_gate_boolean"
+    },
+    "S": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_explicit_human_attestation_and_claim_specific_gate, test_human_confidence_cannot_hide_a_contradicted_audit, test_publication_gate_cannot_pass_empty_work"
+    },
+    "T": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_checkpoint_resume, test_resume_performs_pending_targeted_search_before_revision, test_stale_worker_cannot_checkpoint"
+    },
+    "U": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_provider_failure_fallback"
+    },
+    "V": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_citation_auditor_marks_missing_claim_support_unverified"
+    },
+    "W": {
+      "status": "PASS",
+      "evidence": "Passed installed-wheel regressions: test_injected_document_cannot_invoke_an_unallowed_tool"
+    },
+    "X": {
+      "status": "PASS",
+      "evidence": "Exact 19-file output set and all 18 manifest hashes verified for each of four installed-wheel modes."
+    },
+    "Y": {
+      "status": "PASS",
+      "evidence": "113 passed, 0 failed, 0 skipped under clean installed-wheel interpreter."
+    },
+    "Z": {
+      "status": "PENDING",
+      "evidence": "Finalize after writing and independently reviewing FINAL_IMPLEMENTATION_AUDIT.md."
+    }
+  },
+  "pytest": {
+    "passed": 113,
+    "failed": 0,
+    "skipped": 0
+  },
+  "runs": {
+    "quick": "40582885-5f05-49b8-9eab-718597ffc896",
+    "review": "7fe3cee8-bcdf-4e25-8903-0be5831d21b2",
+    "deep": "a908b122-fa6f-4a89-a096-4ccb3992294c",
+    "novelty": "0ddb056f-c109-44ff-86c6-ee387a52b8fc"
+  },
+  "benchmark_status": "BENCHMARK_READY_BUT_NOT_EXECUTED",
+  "live_provider_calls": 0,
+  "real_literature_benchmark_executed": false
+}

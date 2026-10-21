@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
+from research_council.core.config import Settings
 from research_council.core.gates import publication_gate
 from research_council.core.integrity import validate_graph
 from research_council.core.orchestration.state import WorkflowState
@@ -65,7 +66,11 @@ class MarkdownExporter:
                 "doi": item.paper.metadata.doi,
                 "url": item.paper.metadata.url,
                 "provenance": item.paper.provenance,
-                "score": item.score.total if item.score else None,
+                "score": item.aggregate_score
+                if item.aggregate_score is not None
+                else item.score.total
+                if item.score
+                else None,
                 **(item.score.model_dump(exclude={"paper_id"}) if item.score else {}),
             }
             for item in state.candidates
@@ -181,7 +186,7 @@ class MarkdownExporter:
             + "# Hardware feasibility — assessments, not measurements\n\n"
             + (
                 "\n\n".join(
-                    f"## {assessment.platform}: {assessment.feasibility}\n\n{md(assessment.justification)}\n\nUnknowns: {', '.join(map(md, assessment.unknowns))}\n\nEvidence: {', '.join(map(str, assessment.evidence_ids))}\n\n```json\n{json.dumps(assessment.parameters, indent=2)}\n```"
+                    f"## {assessment.platform}: {assessment.feasibility}\n\nMeasurement status: {assessment.measurement_status}\n\n{md(assessment.justification)}\n\nUnknowns: {', '.join(map(md, assessment.unknowns))}\n\nEvidence: {', '.join(map(str, assessment.evidence_ids))}\n\n```json\n{assessment.model_dump_json(indent=2)}\n```"
                     for assessment in state.hardware
                 )
                 or "Hardware assessment was not completed."
@@ -193,7 +198,7 @@ class MarkdownExporter:
             + "# Proposed experiments — no measured results\n\n"
             + (
                 "\n\n".join(
-                    f"## {md(plan.objective)}\n\nBaselines: {'; '.join(map(md, plan.baselines))}\n\nMetrics: {'; '.join(map(md, plan.metrics))}\n\nProcedures: {'; '.join(map(md, plan.procedures))}\n\nAblations: {'; '.join(map(md, plan.ablations))}\n\nStatistics: {md(plan.statistical_plan)}\n\nReproducibility: {'; '.join(map(md, plan.reproducibility))}\n\nLimitations: {'; '.join(map(md, plan.limitations))}"
+                    f"## {md(plan.objective)}\n\nHypothesis: {md(plan.hypothesis)}\n\nProgression: {' -> '.join(map(md, plan.progression))}\n\nBaselines: {'; '.join(map(md, plan.baselines))}\n\nMetrics: {'; '.join(map(md, plan.metrics))}\n\nProcedures: {'; '.join(map(md, plan.procedures))}\n\nAblations: {'; '.join(map(md, plan.ablations))}\n\nStatistics: {md(plan.statistical_plan)}\n\nFailure cases: {'; '.join(map(md, plan.failure_cases))}\n\nAcceptance criteria: {'; '.join(map(md, plan.acceptance_criteria))}\n\nReproducibility: {'; '.join(map(md, plan.reproducibility))}\n\nLimitations: {'; '.join(map(md, plan.limitations))}\n\n```json\n{plan.model_dump_json(indent=2)}\n```"
                     for plan in state.experiments
                 )
                 or "No experiment plan passed prerequisites."
@@ -232,6 +237,9 @@ class MarkdownExporter:
             state,
             self.repository.list_model_executions(run.run_id),
             require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
+            minimum_evidence=Settings.model_validate(
+                self.repository.artifacts(run.run_id).get("settings", {})
+            ).research.min_novelty_evidence,
         ).passed
         report += [
             "## Publication readiness",

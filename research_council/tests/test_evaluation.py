@@ -54,3 +54,51 @@ def test_grounding_and_gold_labels():
     assert result.metrics["citation_completeness"] == 1
     assert result.metrics["evidence_grounding_rate"] == 1
     assert result.human_scores.technical_depth == 0.5
+
+
+def test_stale_novelty_acceptance_is_excluded_and_usage_is_measured():
+    from test_novelty import candidate_and_evidence
+
+    from research_council.schemas.models import ModelExecution, NoveltyDecision, QualityGateResult
+
+    candidate, evidence = candidate_and_evidence()
+    newer = candidate.model_copy(update={"revision": 2})
+    state = WorkflowState(
+        novelty_candidates=[candidate, newer],
+        evidence=[evidence],
+        decisions=[
+            NoveltyDecision(candidate_id=candidate.candidate_id, revision=1, verdict="SURVIVE"),
+            NoveltyDecision(candidate_id=candidate.candidate_id, revision=2, verdict="REJECT"),
+        ],
+        gates=[
+            QualityGateResult(
+                gate=2, passed=True, candidate_id=candidate.candidate_id, candidate_revision=1
+            )
+        ],
+    )
+    execution = ModelExecution(
+        run_id=uuid4(),
+        agent_id="test",
+        task="test",
+        provider="fake",
+        model="test",
+        input_tokens=40,
+        output_tokens=10,
+        estimated_cost=0,
+    )
+    result = evaluate(
+        state,
+        [execution],
+        [],
+        GoldLabels(candidate_revision_is_novel={f"{candidate.candidate_id}:2": False}),
+        HumanScores(
+            reviewer="test",
+            research_usefulness=0.5,
+            hardware_realism=0.4,
+            publication_readiness=0.1,
+        ),
+    )
+    assert result.metrics["novelty_false_positive_rate"] == 0
+    assert result.metrics["total_tokens"] == 50 and result.metrics["cost_per_run_usd"] == 0
+    assert result.denominators["novelty_false_positive_rate"] == 1
+    assert evaluate(WorkflowState(), [], []).metrics["total_tokens"] is None

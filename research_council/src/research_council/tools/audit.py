@@ -103,6 +103,8 @@ class CitationAuditService:
                 "title",
                 "authors",
                 "year",
+                "venue",
+                "quartile",
                 "doi",
                 "source_location",
                 "not_retracted",

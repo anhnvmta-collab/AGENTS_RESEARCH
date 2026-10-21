@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from contextlib import suppress
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -350,10 +351,18 @@ def audit(run_id: str, workspace: WorkspaceOption = Path("workspace")) -> None:
         validate_graph(state)
 
         async def work() -> None:
-            async with Runtime(
-                workspace, repo, settings_for_run(repo, identity), record
-            ) as pipeline:
-                await pipeline.audit(record, state)
+            heartbeat = asyncio.create_task(lease.heartbeat())
+            try:
+                async with Runtime(
+                    workspace, repo, settings_for_run(repo, identity), record
+                ) as pipeline:
+                    await pipeline.audit(record, state)
+                if heartbeat.done():
+                    await heartbeat
+            finally:
+                heartbeat.cancel()
+                with suppress(asyncio.CancelledError):
+                    await heartbeat
 
         asyncio.run(work())
         state.events.append(

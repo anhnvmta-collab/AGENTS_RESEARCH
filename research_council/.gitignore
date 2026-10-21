@@ -8,6 +8,7 @@ __pycache__/
 workspace/
 dist/
 .wheel-smoke/
+.acceptance-env/
 *.db
 *.db-shm
 *.db-wal

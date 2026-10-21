@@ -91,3 +91,59 @@ def test_math_hypotheses_and_quartile_context_fail_closed():
             quartile="Q1",
             quartile_source="unspecified",
         )
+
+
+def test_dictionary_checkpoint_cannot_bypass_graph_validation(repository):
+    repo, run = repository
+    state = human_ready_state()
+    state.claims[0].evidence_ids = [uuid4()]
+    with pytest.raises(ValueError, match="claim-to-evidence"):
+        repo.checkpoint(run, {"state": state.model_dump(mode="json")})
+    assert "state" not in repo.artifacts(run.run_id)
+
+
+def test_previous_checkpoint_conflict_survives_fresh_state_omission(repository):
+    repo, run = repository
+    state = human_ready_state()
+    opposite = state.evidence[0].model_copy(update={"evidence_id": uuid4()})
+    state.evidence.append(opposite)
+    state.claims[0].contradicting_evidence_ids = [opposite.evidence_id]
+    repo.checkpoint(run, {"state": state})
+    replacement = state.model_copy(deep=True)
+    replacement.conflicts = []
+    replacement.claims[0].contradicting_evidence_ids = []
+    repo.checkpoint(run, {"state": replacement.model_dump(mode="json")})
+    saved = WorkflowState.model_validate(repo.artifacts(run.run_id)["state"])
+    assert saved.conflicts and unresolved_conflict(saved.claims[0], saved.conflicts)
+    assert saved.claims[0].contradicting_evidence_ids == [opposite.evidence_id]
+
+
+async def test_reader_receives_ranked_chunks_and_stamps_exact_provenance(repository):
+    import json
+
+    from research_council.agents.contracts import ReadingInput
+    from research_council.agents.deep_reader import DeepReader
+    from research_council.core.config import Settings
+    from research_council.core.routing import ModelRouter
+    from research_council.providers.base import LLMResponse
+    from research_council.providers.fake import FakeProvider
+
+    repo, run = repository
+    state = human_ready_state()
+    paper = state.candidates[0].paper
+    quote = "FPGA sampling bandwidth latency measurement remained unavailable."
+    paper.source_kind = "local_pdf"
+    paper.source_text = None
+    paper.page_texts = {1: "Background " * 4000, 25: quote}
+    item = state.evidence[0].model_copy(update={"page": 25, "verbatim_excerpt": quote})
+    provider = FakeProvider(
+        [LLMResponse(text=json.dumps({"evidence": [item.model_dump(mode="json")]}))]
+    )
+    output = await DeepReader(ModelRouter(Settings(), {"fake": provider}, repo, run.run_id)).run(
+        ReadingInput(task="FPGA latency bandwidth", paper=paper)
+    )
+    sent = json.loads(provider.requests[0].user)["untrusted_task_data"]
+    assert sent["paper"]["source_text"] is None and not sent["paper"]["page_texts"]
+    assert sent["chunks"][0]["page"] == 25 and len(sent["chunks"]) <= 8
+    assert output.evidence[0].chunk_id and output.evidence[0].source_sha256
+    assert output.evidence[0].verification_status == VerificationStatus.PARTIALLY_VERIFIED

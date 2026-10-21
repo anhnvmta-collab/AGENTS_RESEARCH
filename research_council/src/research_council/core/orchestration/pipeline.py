@@ -566,6 +566,11 @@ class ResearchPipeline:
             require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
             minimum_evidence=self.settings.research.min_novelty_evidence,
         )
+        if {item.paper_id for item in AuditsOutput.model_validate(result).audits} != {
+            item.paper_id for item in value.papers
+        }:
+            gate.passed = False
+            gate.reasons.append("Current citation audit did not complete for every source.")
         state.gates = [item for item in state.gates if item.gate != 3] + [gate]
         return state
 

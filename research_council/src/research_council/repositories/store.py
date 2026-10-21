@@ -383,8 +383,12 @@ class SQLRepository:
                     from research_council.core.orchestration.state import WorkflowState
                     from research_council.storage.projector import project_state
 
-                    if isinstance(value, WorkflowState):
-                        project_state(self, connection, run, value)
+                    value = (
+                        value
+                        if isinstance(value, WorkflowState)
+                        else WorkflowState.model_validate(value)
+                    )
+                    project_state(self, connection, run, value)
                 if isinstance(value, Schema):
                     payload: Any = value.model_dump(mode="json")
                 elif isinstance(value, list):

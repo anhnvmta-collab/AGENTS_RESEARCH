@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import uuid5
 
+from sqlalchemy import select
 from sqlalchemy.engine import Connection
 
 from research_council.core.grounding import grounded_excerpt
 from research_council.core.integrity import synchronize_conflicts, validate_graph
 from research_council.core.orchestration.state import WorkflowState
 from research_council.repositories.store import normalized_title
-from research_council.schemas.models import ResearchRun, VerificationStatus
+from research_council.schemas.models import EvidenceConflict, ResearchRun, VerificationStatus
+from research_council.storage.database import tables
 from research_council.storage.graph import project_graph, record_id
 
 if TYPE_CHECKING:
@@ -20,6 +22,34 @@ def project_state(
     repository: SQLRepository, connection: Connection, run: ResearchRun, state: WorkflowState
 ) -> None:
     """Project typed checkpoint artifacts into queryable tables in the same transaction."""
+    # A fresh model/dictionary must not erase conflicts from the prior checkpoint.
+    artifacts = tables["artifacts"]
+    previous: dict[str, Any] = (
+        connection.execute(
+            select(artifacts.c.payload).where(
+                artifacts.c.run_id == str(run.run_id), artifacts.c.name == "state"
+            )
+        ).scalar_one_or_none()
+        or {}
+    )
+    active_claims = {item.claim_id for item in state.claims}
+    current_conflicts = {item.conflict_id: item for item in state.conflicts}
+    for raw in previous.get("conflicts", []):
+        historical = EvidenceConflict.model_validate(raw)
+        if historical.claim_id not in active_claims:
+            continue  # Explicit question modification can invalidate the entire claim graph.
+        current = current_conflicts.get(historical.conflict_id)
+        if current is None:
+            state.conflicts.append(historical)
+        else:
+            if current.claim_id != historical.claim_id:
+                raise ValueError("Conflict identity cannot be reassigned to another claim")
+            current.supporting = list(dict.fromkeys([*historical.supporting, *current.supporting]))
+            current.contradicting = list(
+                dict.fromkeys([*historical.contradicting, *current.contradicting])
+            )
+            if historical.severity == "HIGH":
+                current.severity = historical.severity
     synchronize_conflicts(state)
     validate_graph(state)
     project_graph(repository, connection, run.run_id, state)
