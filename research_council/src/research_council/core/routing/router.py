@@ -57,7 +57,11 @@ class ModelRouter:
         timeout_seconds: float | None = None,
         avoid_provider: str | None = None,
     ) -> T:
-        routes = list(self.settings.role_routes.get(role, self.settings.models.get(profile, [])))
+        routes = [
+            route
+            for route in self.settings.role_routes.get(role, self.settings.models.get(profile, []))
+            if route.enabled
+        ]
         if role == "ReviewerTwo" and avoid_provider:
             routes.sort(
                 key=lambda route: (

@@ -1,0 +1,202 @@
+{
+  "status": "LIVE_DEPLOYMENT_READY",
+  "status_scope": "Operational tooling is implemented; operator-specific configuration and access remain unvalidated.",
+  "base_commit": "4135a6436fab66e540fd904d3a87b19a0faee0e0",
+  "branch": "phase-11-live-validation",
+  "offline_tests": {
+    "passed": 179,
+    "previous_suite_passed": 159,
+    "new_preflight_cases_passed": 20,
+    "failed": 0,
+    "errors": 0,
+    "live_deselected": 2,
+    "junit": "live-preflight-offline.xml"
+  },
+  "checks": {
+    "ruff_format_check": "PASS",
+    "ruff_check": "PASS",
+    "mypy": "PASS",
+    "source_files": 103,
+    "powershell_documentation_blocks_parsed": 17,
+    "powershell_blocks_executed": 0,
+    "installed_wheel_cli": "PASS",
+    "pip_check": "PASS"
+  },
+  "wheel_sha256": "864041b1af81be8a7cc0125ba32c8becab75311ef8b524522af3d9b8a9faacec",
+  "operator_template_nonpaid_preflight": {
+    "ready": false,
+    "mode": "CONFIGURATION_ONLY",
+    "errors": [
+      "MISSING_KEY: OPENAI_API_KEY",
+      "MISSING_KEY: ANTHROPIC_API_KEY",
+      "MISSING_KEY: GOOGLE_API_KEY",
+      "MODEL_ID_REQUIRED: SEARCH_PLANNING",
+      "MISSING_PRICE: SEARCH_PLANNING; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: PAPER_EXTRACTION",
+      "MISSING_PRICE: PAPER_EXTRACTION; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: MATH_REASONING",
+      "MISSING_PRICE: MATH_REASONING; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: HARDWARE_REASONING",
+      "MISSING_PRICE: HARDWARE_REASONING; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: SYNTHESIS",
+      "MISSING_PRICE: SYNTHESIS; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: NOVELTY_GENERATION",
+      "MISSING_PRICE: NOVELTY_GENERATION; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: ADVERSARIAL_REVIEW",
+      "MISSING_PRICE: ADVERSARIAL_REVIEW; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: CITATION_VERIFICATION",
+      "MISSING_PRICE: CITATION_VERIFICATION; cost reservation unavailable",
+      "MODEL_ID_REQUIRED: NoveltyJudge",
+      "MISSING_PRICE: NoveltyJudge; cost reservation unavailable"
+    ],
+    "warnings": [
+      "PRICE_REVIEW_DATE_MISSING: SEARCH_PLANNING",
+      "PRICE_REVIEW_DATE_MISSING: PAPER_EXTRACTION",
+      "PRICE_REVIEW_DATE_MISSING: MATH_REASONING",
+      "PRICE_REVIEW_DATE_MISSING: HARDWARE_REASONING",
+      "PRICE_REVIEW_DATE_MISSING: SYNTHESIS",
+      "PRICE_REVIEW_DATE_MISSING: NOVELTY_GENERATION",
+      "PRICE_REVIEW_DATE_MISSING: ADVERSARIAL_REVIEW",
+      "PRICE_REVIEW_DATE_MISSING: CITATION_VERIFICATION",
+      "PRICE_REVIEW_DATE_MISSING: NoveltyJudge",
+      "OPENALEX_API_KEY_RECOMMENDED_FOR_RESEARCH_SCALE; unauthenticated limits are not coverage"
+    ],
+    "providers": [
+      {
+        "provider": "openai",
+        "enabled": true,
+        "required_environment_variable": "OPENAI_API_KEY",
+        "key_present": false,
+        "service_status": "NOT_CONTACTED"
+      },
+      {
+        "provider": "anthropic",
+        "enabled": true,
+        "required_environment_variable": "ANTHROPIC_API_KEY",
+        "key_present": false,
+        "service_status": "NOT_CONTACTED"
+      },
+      {
+        "provider": "google",
+        "enabled": true,
+        "required_environment_variable": "GOOGLE_API_KEY",
+        "key_present": false,
+        "service_status": "NOT_CONTACTED"
+      }
+    ],
+    "routing": [
+      {
+        "scope": "SEARCH_PLANNING",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "PAPER_EXTRACTION",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "MATH_REASONING",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "HARDWARE_REASONING",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "SYNTHESIS",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "NOVELTY_GENERATION",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "ADVERSARIAL_REVIEW",
+        "enabled_routes": 3,
+        "disabled_routes": 0,
+        "fallback_routes": 2
+      },
+      {
+        "scope": "CITATION_VERIFICATION",
+        "enabled_routes": 2,
+        "disabled_routes": 0,
+        "fallback_routes": 1
+      },
+      {
+        "scope": "NoveltyJudge",
+        "enabled_routes": 3,
+        "disabled_routes": 0,
+        "fallback_routes": 2
+      }
+    ],
+    "sources": [
+      {
+        "adapter": "crossref",
+        "status": "CONFIGURED_NOT_TESTED",
+        "scientifically_validated": false
+      },
+      {
+        "adapter": "openalex",
+        "status": "CONFIGURED_NOT_TESTED",
+        "scientifically_validated": false
+      },
+      {
+        "adapter": "arxiv",
+        "status": "CONFIGURED_NOT_TESTED",
+        "scientifically_validated": false
+      }
+    ],
+    "budget": {
+      "max_total_cost": 5.0,
+      "max_model_calls": 80,
+      "max_search_calls": 1000,
+      "max_core_papers": 12,
+      "max_deep_reads": 12,
+      "max_novelty_iterations": 3
+    },
+    "paid_model_calls_made": 0,
+    "live_benchmark_executed": false,
+    "scientific_readiness_level": "SRL-0",
+    "limitations": [
+      "No provider authentication, model access, structured-output compatibility or service reachability was tested.",
+      "Configuration readiness is not scientific validation or literature coverage.",
+      "Token-price estimates are distinct from actual billing and source-service fees."
+    ]
+  },
+  "installed_preflight_expected_exit_code": 1,
+  "operator_inputs_required": [
+    "enabled provider model IDs",
+    "input/output prices and review dates",
+    "enabled provider API keys"
+  ],
+  "optional_unavailable_adapter": "IEEE authenticated backend is not wired; excluded from recommended template.",
+  "source_health_checks_executed": false,
+  "real_provider_smoke_executed": false,
+  "paid_smoke_estimated_cap_usd": 0.25,
+  "scientific_run_estimated_model_cap_usd": 5,
+  "PAID_MODEL_CALLS_MADE": 0,
+  "LIVE_BENCHMARK_EXECUTED": false,
+  "SCIENTIFIC_READINESS_LEVEL": "SRL-0",
+  "actual_billed_cost_usd": null,
+  "public_documentation_only": "Official API/security/pricing documentation was consulted; no model inference or scientific source health check was performed.",
+  "installed_wheel_scientific_preparation": {
+    "run_id": "5292c10c-a8e8-497f-ac2f-0815302feb8d",
+    "workspace": "workspace\\live-deployment-preflight-prepare",
+    "verified_export_hashes": 36,
+    "model_executions": 0,
+    "live_execution": false,
+    "scientific_readiness_level": "SRL-0",
+    "source_tree_sha256": "3db4ffdf2f5918367dc2bcca2e862e3ed6a7e02abe7abc55b3d83525cd352afd"
+  }
+}

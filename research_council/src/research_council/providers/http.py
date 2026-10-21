@@ -176,7 +176,8 @@ class GeminiProvider(HTTPProvider):
             text="".join(part.get("text", "") for part in parts),
             usage_available=bool(usage),
             input_tokens=usage.get("promptTokenCount", 0),
-            output_tokens=usage.get("candidatesTokenCount", 0),
+            # Gemini bills candidate and reasoning tokens together as output.
+            output_tokens=usage.get("candidatesTokenCount", 0) + usage.get("thoughtsTokenCount", 0),
             tool_calls=[
                 ToolCall(
                     call_id=str(index),

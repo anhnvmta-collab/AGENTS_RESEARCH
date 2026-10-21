@@ -99,3 +99,17 @@ from benchmark execution. Missing human judgments and unexecuted coverage remain
 scientific findings, measured hardware performance or surviving novelty are fabricated.
 The branch is phase-11-live-validation; final remote SHA is verified after push and reported
 to the operator. Actual model billing remains unknown; estimated model spend for preparation is zero.
+
+## Operational preflight follow-up (no Phase 12)
+Continued from 4135a6436fab66e540fd904d3a87b19a0faee0e0 on the same branch. Added the
+operator template, configuration-only providers preflight, separately confirmed bounded
+provider smoke, PowerShell credential guide, 18-step runbook and domain-review checklist.
+Explicit profile checks detect omissions masked by V1 default routes. Disabled provider
+routes are skipped without losing fallback support. Optional price review dates identify
+missing/stale estimates. A mocked Gemini response reproduced omitted reasoning-token cost;
+the adapter now includes that usage in output estimates. Existing gates/approval pauses,
+checkpoint/resume and verified seed papers remain unchanged. Final offline checks pass:
+formatter/lint/mypy (103 source files), 179 tests, zero failures, two live tests deselected.
+No real provider smoke, scholarly health test or scientific benchmark was executed. Only
+offline HTTP mocks were exercised. PAID_MODEL_CALLS_MADE=0; LIVE_BENCHMARK_EXECUTED=false;
+SCIENTIFIC_READINESS_LEVEL=SRL-0. Operator model IDs, prices and credentials are still required.

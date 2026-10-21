@@ -77,6 +77,8 @@ def create_run(
     if live and configured == {"fake"}:
         raise ValueError("Configure a real model provider before a live run")
     if live:
+        if any(not routes for routes in settings.route_groups()):
+            raise ValueError("Live profiles and role overrides require at least one enabled route")
         key_names = {
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",

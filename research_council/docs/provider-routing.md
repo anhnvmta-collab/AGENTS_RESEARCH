@@ -39,3 +39,14 @@ Official protocol references, checked 2026-10-21:
 * [Crossref REST API](https://www.crossref.org/documentation/retrieve-metadata/rest-api/)
 
 Scientific source references checked 2026-10-21: [arXiv API manual](https://info.arxiv.org/help/api/user-manual.html) and [arXiv API terms](https://info.arxiv.org/help/api/tou.html). The adapter serializes metadata requests with a minimum three-second interval. IEEE official documentation could not be retrieved in this session; its authenticated backend remains optional rather than an unverified endpoint implementation.
+
+## Operational preflight
+
+For the first scientific run use `config/phase11.operator.example.yaml` and
+`research-council providers preflight --config config/phase11.operator.yaml`.
+This configuration-only check creates no client and never tests paid inference by default.
+`enabled: false` skips a route, its model-ID environment substitution and credential/price
+requirements. Every task and role override still needs an enabled route. The optional
+`pricing_verified_on` date is operator metadata; missing or stale dates warn rather than
+inventing current prices. Missing numeric prices block preflight/cost reservation.
+See [provider setup](LIVE_PROVIDER_SETUP.md) and [first-run runbook](FIRST_LIVE_RUN.md).

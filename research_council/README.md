@@ -198,3 +198,16 @@ was run. See the [operator guide and A–V acceptance](docs/PHASE_11_VALIDATION.
 [phase report](docs/phases/phase-11.md) and [generated preparation report](LIVE_SCIENTIFIC_VALIDATION.md).
 Live execution requires both `--live --confirm-paid-apis` and an operator-configured model/pricing
 file. Credentials alone do not authorize it. Existing Phase 0–10 audit results remain historical.
+
+For the first real run, copy `config/phase11.operator.example.yaml` to the ignored
+`config/phase11.operator.yaml`, configure the three provider anchors, then check without network:
+
+```powershell
+research-council providers preflight --config config/phase11.operator.yaml
+```
+
+[Provider/PowerShell setup](docs/LIVE_PROVIDER_SETUP.md), [18-step runbook](docs/FIRST_LIVE_RUN.md)
+and [expert checklist](docs/LIVE_RUN_REVIEW_CHECKLIST.md) cover the complete handoff. Optional
+provider smoke uses both execution flags and its own USD 0.25 aggregate estimate cap. The
+operational preflight adds 20 offline regression cases; current suite: 179 passed, zero failed,
+two live deselected. The Phase 11 audit above records the preceding 159-test handoff.

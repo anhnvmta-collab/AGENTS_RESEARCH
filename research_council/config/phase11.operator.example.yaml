@@ -1,0 +1,66 @@
+# Copy to phase11.operator.yaml. This template intentionally cannot launch as supplied.
+# Edit the THREE anchored routes: account-valid model IDs, prices and review dates.
+# No credential values belong here. Disable an unavailable provider at its anchor.
+science_benchmark: CS_FHSS_DOA_FPGA
+research:
+  human_approval_required: true
+  budget_usd: 5.0
+  max_model_calls: 80
+  max_queries: 36
+  max_core_papers: 12
+  min_novelty_evidence: 2
+  max_novelty_iterations: 3
+live_research_budget:
+  max_total_cost: 5.0
+  max_model_calls: 80
+  max_search_calls: 1000
+  max_core_papers: 12
+  max_deep_reads: 12
+  max_novelty_iterations: 3
+concurrency: {agents: 3, searches: 3, paper_reads: 2}
+search:
+  adapters: [crossref, openalex, arxiv]
+  results_per_query: 5
+  local_documents: []
+  contact_email: null
+  saturation_patience: 3
+  minimum_new_unique_rate: 0.02
+models:
+  SEARCH_PLANNING:
+    - &openai
+      enabled: true
+      provider: openai
+      model: CONFIGURE_ME
+      input_cost_per_million: null
+      output_cost_per_million: null
+      pricing_verified_on: null
+      max_output_tokens: 4096
+    - &anthropic
+      enabled: true
+      provider: anthropic
+      model: CONFIGURE_ME
+      input_cost_per_million: null
+      output_cost_per_million: null
+      pricing_verified_on: null
+      max_output_tokens: 4096
+  PAPER_EXTRACTION: [*anthropic, *openai]
+  MATH_REASONING: [*openai, *anthropic]
+  HARDWARE_REASONING: [*anthropic, *openai]
+  SYNTHESIS: [*openai, *anthropic]
+  NOVELTY_GENERATION: [*openai, *anthropic]
+  ADVERSARIAL_REVIEW:
+    - &google
+      enabled: true
+      provider: google
+      model: CONFIGURE_ME
+      input_cost_per_million: null
+      output_cost_per_million: null
+      pricing_verified_on: null
+      max_output_tokens: 4096
+    - *anthropic
+    - *openai
+  CITATION_VERIFICATION: [*openai, *anthropic]
+role_routes:
+  NoveltyJudge: [*anthropic, *google, *openai]
+retries: 1
+timeout_seconds: 60

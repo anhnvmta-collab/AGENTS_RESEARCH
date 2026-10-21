@@ -2,6 +2,10 @@
 
 Status: **PHASE_11_IMPLEMENTED / LIVE_VALIDATION_NOT_YET_EXECUTED / SRL-0**.
 
+For the current operational handoff, use [FIRST_LIVE_RUN.md](FIRST_LIVE_RUN.md) and
+`config/phase11.operator.example.yaml`. The verification below records the Phase 11
+implementation checkpoint; the subsequent preflight suite adds 20 cases (179 total).
+
 This extends baseline `b992b9fbb6125cd1ec177b49b3a4e604291386bb` on
 `phase-11-live-validation`. Phase 0–10 reports and FINAL_IMPLEMENTATION_AUDIT remain the
 historical engineering baseline. No real scientific result, novelty survival, measured hardware

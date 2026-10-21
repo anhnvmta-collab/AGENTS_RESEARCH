@@ -5,6 +5,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .env
+.env.*
+!.env.example
+config/phase11.operator.yaml
 workspace/
 dist/
 .wheel-smoke/

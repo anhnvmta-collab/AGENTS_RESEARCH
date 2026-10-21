@@ -4,6 +4,8 @@ import hashlib
 import json
 import os
 import re
+from collections.abc import Mapping
+from datetime import date
 from pathlib import Path
 from typing import Literal
 
@@ -15,11 +17,13 @@ from research_council.validation.budget import LiveResearchBudget
 
 
 class Route(Schema):
+    enabled: bool = True
     provider: str = "fake"
     model: str = "offline"
     input_cost_per_million: float | None = Field(default=None, ge=0)
     output_cost_per_million: float | None = Field(default=None, ge=0)
     max_output_tokens: int = Field(default=4096, ge=128, le=32768)
+    pricing_verified_on: date | None = None
 
 
 class ResearchConfig(Schema):
@@ -86,7 +90,10 @@ class Settings(Schema):
         return self
 
     def route_groups(self) -> list[list[Route]]:
-        return [*self.models.values(), *self.role_routes.values()]
+        return [
+            [route for route in routes if route.enabled]
+            for routes in [*self.models.values(), *self.role_routes.values()]
+        ]
 
     def fingerprint(self) -> str:
         current = hashlib.sha256(
@@ -100,7 +107,9 @@ class Settings(Schema):
         self._fingerprint_alias = (self.fingerprint(), expected)
 
 
-def load_settings(path: Path | None = None) -> Settings:
+def load_settings(
+    path: Path | None = None, *, environ: Mapping[str, str] | None = None
+) -> Settings:
     if path is None:
         return Settings()
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -153,7 +162,7 @@ def load_settings(path: Path | None = None) -> Settings:
             if not isinstance(route, dict):
                 raise ValueError("Route must be a mapping")
             model = route.get("model", "offline")
-            if isinstance(model, str) and "${" in model:
+            if route.get("enabled", True) and isinstance(model, str) and "${" in model:
 
                 def replace_variable(match: re.Match[str]) -> str:
                     name = match.group(1)
@@ -161,7 +170,7 @@ def load_settings(path: Path | None = None) -> Settings:
                         raise ValueError(
                             "Only model-ID environment variables may appear in model configuration"
                         )
-                    value = os.environ.get(name)
+                    value = (os.environ if environ is None else environ).get(name)
                     if not value:
                         raise ValueError(f"Missing model-ID environment variable: {name}")
                     return value
