@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import re
+
 from pydantic import Field
 
-from research_council.schemas.models import HardwareAssessment, Schema
+from research_council.schemas.models import Evidence, HardwareAssessment, Schema, VerificationStatus
 
 
 class StreamRequirements(Schema):
@@ -65,7 +67,10 @@ def estimate_streaming(
 
 
 def validate_hardware(
-    assessment: HardwareAssessment, evidence_ids: set[object], paper_ids: set[object]
+    assessment: HardwareAssessment,
+    evidence_ids: set[object],
+    paper_ids: set[object],
+    evidence_records: list[Evidence] | None = None,
 ) -> HardwareAssessment:
     if not set(assessment.evidence_ids).issubset(evidence_ids) or not set(
         assessment.paper_ids
@@ -85,11 +90,66 @@ def validate_hardware(
         "fixed_point_bits",
         "clock_hz",
     }
+    sources = {item.evidence_id: item for item in evidence_records or []}
+    for key, identities in assessment.parameter_evidence.items():
+        if (
+            key not in assessment.parameters
+            or not identities
+            or not set(identities).issubset(set(assessment.evidence_ids) & evidence_ids)
+        ):
+            raise ValueError("Hardware parameter has unknown or missing evidence")
+    for key in required:
+        value = assessment.parameters.get(key)
+        if value is not None and (
+            not isinstance(value, (int, float)) or isinstance(value, bool) or value < 0
+        ):
+            raise ValueError("Hardware numeric parameters must be explicit nonnegative numbers")
+    supported = all(
+        assessment.parameter_evidence.get(key)
+        and all(
+            identity in sources
+            and sources[identity].verification_status == VerificationStatus.VERIFIED
+            and numeric_quote_support(float(value), sources[identity].verbatim_excerpt)
+            for identity in assessment.parameter_evidence[key]
+        )
+        for key, value in assessment.parameters.items()
+        if key in required and value is not None
+    ) and bool(assessment.parameters)
+    if assessment.measurement_status == "MEASURED" and not supported:
+        assessment.measurement_status = "ESTIMATED" if assessment.parameters else "UNKNOWN"
+        assessment.unknowns.append(
+            "Measured parameter provenance is incomplete; values are estimates only."
+        )
     unknown = [name for name in sorted(required) if assessment.parameters.get(name) is None]
     assessment.unknowns = list(dict.fromkeys(assessment.unknowns + unknown))
-    if assessment.feasibility == "GREEN" and (unknown or not assessment.evidence_ids):
+    if assessment.feasibility == "GREEN" and (
+        unknown or not supported or assessment.measurement_status != "MEASURED"
+    ):
         assessment.feasibility = "YELLOW"
         assessment.justification += (
             " Missing sourced implementation parameters prevent a GREEN assessment."
         )
     return assessment
+
+
+def numeric_quote_support(value: float, quote: str) -> bool:
+    """Conservative numeric anchor only; semantic correctness still needs review."""
+    for match in re.finditer(
+        r"(?<![\w.])([0-9]+(?:\.[0-9]+)?(?:e[+-]?[0-9]+)?)\s*(GHz|MHz|kHz|Hz|ms|us|ns|GB/s|MB/s|kB/s)?",
+        quote,
+        re.I,
+    ):
+        scale = {
+            "ghz": 1e9,
+            "mhz": 1e6,
+            "khz": 1e3,
+            "ms": 1e-3,
+            "us": 1e-6,
+            "ns": 1e-9,
+            "gb/s": 1e9,
+            "mb/s": 1e6,
+            "kb/s": 1e3,
+        }.get((match[2] or "").casefold(), 1)
+        if abs(float(match[1]) * scale - value) <= max(1e-12, abs(value) * 1e-9):
+            return True
+    return False

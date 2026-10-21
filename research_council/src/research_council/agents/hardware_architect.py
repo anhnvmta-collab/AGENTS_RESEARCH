@@ -18,4 +18,5 @@ class HardwareArchitect(BaseResearchAgent[AnalysisInput, HardwareAssessment]):
             await super().execute(value),
             {item.evidence_id for item in value.evidence},
             {paper.paper_id for paper in value.papers},
+            value.evidence,
         )

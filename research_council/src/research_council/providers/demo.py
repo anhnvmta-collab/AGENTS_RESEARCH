@@ -170,12 +170,30 @@ def synthetic_response(request: LLMRequest) -> LLMResponse:
     elif role == "ExperimentDesigner":
         result = {
             "objective": "SYNTHETIC experiment plan only",
+            "hypothesis": "Unverified synthetic pipeline hypothesis: deadline is met without degraded detection.",
             "baselines": ["Reference floating-point implementation"],
             "metrics": ["Latency", "Detection probability", "DOA error", "FPGA resources"],
             "procedures": [
                 "Pre-register hypotheses, seeds and hop-rate sweep; measure rather than assume."
             ],
             "limitations": ["No experimental data collected."],
+            "ablations": ["Disable sparse recovery; compare identical inputs and budgets"],
+            "statistical_plan": "Pre-register paired seeds, sample size and 95% confidence intervals.",
+            "failure_cases": ["Low SNR, missed hops, calibration drift and deadline overruns"],
+            "acceptance_criteria": [
+                "Pre-register error and deadline thresholds before data collection"
+            ],
+            "reproducibility": [
+                "Record seeds, source hashes, tool versions and hardware configuration"
+            ],
+            "progression": [
+                "Simulation",
+                "Synthetic IQ",
+                "Recorded IQ",
+                "SDR",
+                "FPGA/RFSoC",
+                "RF experiment if appropriate",
+            ],
         }
     elif role == "PaperArchitect":
         result = {

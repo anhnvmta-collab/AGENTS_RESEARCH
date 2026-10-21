@@ -226,6 +226,10 @@ def validate_graph(state: WorkflowState) -> None:
     for assessment in state.hardware:
         require(assessment.paper_ids, papers, "hardware-to-paper")
         require(assessment.evidence_ids, evidence, "hardware-to-evidence")
+        for identities in assessment.parameter_evidence.values():
+            require(identities, evidence, "hardware-parameter-to-evidence")
+            if not set(identities).issubset(assessment.evidence_ids):
+                raise ValueError("Hardware parameter evidence is outside assessment scope")
     for audit in state.audits:
         require([audit.paper_id], papers, "audit-to-paper")
         require(audit.claim_ids, claims, "audit-to-claim")

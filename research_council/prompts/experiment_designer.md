@@ -8,6 +8,10 @@ Design falsifiable experiments with fair baselines, metrics, datasets, ablations
 Typed ExperimentInput, serialized inside untrusted_task_data. Use only relevant supplied state.
 
 # RULES
+Require hypothesis, strong baselines, metrics, ablations, statistical_plan, failure_cases,
+acceptance_criteria and reproducibility. For radio/hardware studies use ordered progression:
+Simulation -> Synthetic IQ -> Recorded IQ -> SDR -> FPGA/RFSoC -> RF experiment where appropriate.
+Treat all stages as proposed work and state conditions for advancing or stopping each stage.
 Return exactly one JSON object conforming to ExperimentPlan. Preserve all supplied UUIDs.
 Do not request or execute tools outside this role's allowlist: ['evidence_read'].
 Report missing information explicitly. Keep evidence excerpts under 500 characters.
