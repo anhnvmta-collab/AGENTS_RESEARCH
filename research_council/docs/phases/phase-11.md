@@ -45,3 +45,10 @@ assumptions and model comparison CSVs. Search rounds record query/result/new-cor
 explicit lexical method-family/citation-seed proxies. No coverage or measured-data claim is
 inferred from an empty package. Checks: formatter/lint/mypy passed (90 source files);
 128 offline tests passed, 0 failed.
+
+## 11F scientific readiness levels
+Added SRL-0 through SRL-9, explicit prerequisite facts, sequential evidence history, named
+operator review and artifact/reference verification. Creating a benchmark does not advance SRL.
+Human-sampling, gap review, independent review models and experimental/replication facts are
+required at their respective levels. Checks: formatter/lint/mypy passed (91 source files);
+130 offline tests passed, 0 failed.
