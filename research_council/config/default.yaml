@@ -1,0 +1,26 @@
+research:
+  max_novelty_iterations: 3
+  max_core_papers: 30
+  min_novelty_evidence: 2
+  max_queries: 12
+  max_model_calls: 200
+  budget_usd: 5.0
+  human_approval_required: false
+concurrency:
+  agents: 5
+  searches: 5
+  paper_reads: 4
+search:
+  adapters: []
+  local_documents: []
+# Omitted profiles use the explicit offline default. Configure all required profiles
+# for a live run. Model IDs and prices are deliberately operator supplied.
+models:
+  SEARCH_PLANNING: [{provider: fake, model: offline}]
+  PAPER_EXTRACTION: [{provider: fake, model: offline}]
+  MATH_REASONING: [{provider: fake, model: offline}]
+  HARDWARE_REASONING: [{provider: fake, model: offline}]
+  SYNTHESIS: [{provider: fake, model: offline}]
+  NOVELTY_GENERATION: [{provider: fake, model: offline}]
+  ADVERSARIAL_REVIEW: [{provider: fake, model: offline}]
+  CITATION_VERIFICATION: [{provider: fake, model: offline}]
