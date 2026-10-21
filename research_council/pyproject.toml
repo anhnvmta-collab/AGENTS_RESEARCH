@@ -46,5 +46,7 @@ no_implicit_optional = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not live' --strict-markers"
+markers = ["live: real service calls; requires --run-live --confirm-paid-apis and operator configuration"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

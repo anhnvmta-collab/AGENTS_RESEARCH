@@ -61,3 +61,10 @@ partial successful results before BUDGET_EXHAUSTED. Scientific live creation/run
 stored explicit paid-API confirmation. Provider billing remains external; estimates and unknown
 actual billed costs are distinguished. Checks: formatter/lint/mypy passed (92 source files);
 136 offline tests passed, 0 failed, including concurrent admission and partial-stage recovery.
+
+## 11H live test separation and secret controls
+Default pytest and CI explicitly exclude the live marker. Selecting live tests without both
+--run-live and --confirm-paid-apis fails during collection before network access. Two real-service
+smoke tests are opt-in only; operator configuration is required for the paid route. Source/config
+credential-literal scanning and .env-ignore regressions pass. Checks: formatter/lint/mypy passed
+(92 source files); 138 offline tests passed, 0 failed; 2 live tests deselected, not executed.
