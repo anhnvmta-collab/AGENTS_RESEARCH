@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid5
 
 import httpx
 
@@ -20,7 +20,13 @@ from research_council.providers.demo import SyntheticSearchAdapter, synthetic_re
 from research_council.providers.fake import FakeProvider
 from research_council.providers.http import AnthropicProvider, GeminiProvider, OpenAIProvider
 from research_council.repositories.store import SQLRepository
-from research_council.schemas.models import Mode, ResearchProject, ResearchQuestion, ResearchRun
+from research_council.schemas.models import (
+    Mode,
+    ResearchProject,
+    ResearchQuestion,
+    ResearchRun,
+    Schema,
+)
 from research_council.storage.database import make_engine, migrate
 from research_council.tools.arxiv import ArxivAdapter
 from research_council.tools.audit import CitationAuditService
@@ -35,6 +41,7 @@ from research_council.tools.search import (
     OpenAlexAdapter,
     SearchAdapter,
 )
+from research_council.validation.budget import BudgetLedger, BudgetUsage
 from research_council.validation.identity import IdentityAuditService, IdentityInput
 
 
@@ -54,7 +61,10 @@ def create_run(
     *,
     demo: bool = False,
     live: bool = False,
+    confirm_paid_apis: bool = False,
 ) -> ResearchRun:
+    if settings.science_benchmark and live and not confirm_paid_apis:
+        raise ValueError("Scientific live validation requires --live and --confirm-paid-apis")
     configured = {route.provider for routes in settings.route_groups() for route in routes}
     if demo and live:
         raise ValueError("Choose either --demo or --live")
@@ -98,6 +108,18 @@ def create_run(
     )
     repository.create_run(project, run)
     repository.checkpoint(run, {"settings": settings})
+    if settings.science_benchmark and live:
+
+        class PaidConfirmation(Schema):
+            confirmed: bool = True
+
+        repository.save(
+            "artifacts",
+            uuid5(run.run_id, "paid-confirmation"),
+            PaidConfirmation(),
+            run.run_id,
+            name="paid_api_confirmation",
+        )
     return run
 
 
@@ -118,9 +140,49 @@ class Runtime:
                 max_connections=settings.concurrency.searches + settings.concurrency.agents
             ),
         )
+        self.live_budget: BudgetLedger | None = None
+        if settings.live_research_budget:
+            prior = repository.artifacts(run.run_id).get("live_budget_usage", {})
+            usage = BudgetUsage.model_validate(prior)
+            records = repository.list_model_executions(run.run_id)
+            usage.model_calls = max(usage.model_calls, len(records))
+            usage.estimated_cost = max(
+                usage.estimated_cost + usage.reserved_cost,
+                sum(item.estimated_cost or 0 for item in records),
+            )
+            usage.reserved_cost = 0
+
+            def persist(value: BudgetUsage) -> None:
+                repository.save(
+                    "artifacts",
+                    uuid5(run.run_id, "live-budget"),
+                    value,
+                    run.run_id,
+                    name="live_budget_usage",
+                )
+
+            self.live_budget = BudgetLedger(settings.live_research_budget, usage, persist)
+            self.client.event_hooks["request"].append(self._admit_http)
+
+    async def _admit_http(self, request: httpx.Request) -> None:
+        if self.live_budget and request.url.host not in {
+            "api.openai.com",
+            "api.anthropic.com",
+            "generativelanguage.googleapis.com",
+        }:
+            self.live_budget.consume("search_calls")
 
     async def __aenter__(self) -> ResearchPipeline:
         settings = self.settings
+        if (
+            settings.science_benchmark
+            and self.run.provenance == "live"
+            and not self.repository.artifacts(self.run.run_id)
+            .get("paid_api_confirmation", {})
+            .get("confirmed")
+        ):
+            await self.client.aclose()
+            raise ValueError("Scientific live validation has no explicit paid API confirmation")
         providers: dict[str, BaseLLMProvider] = {
             "fake": FakeProvider(
                 responder=synthetic_response if self.run.provenance == "fixture" else None
@@ -162,6 +224,7 @@ class Runtime:
             workspace_path(self.workspace, f"runs/{self.run.run_id}/trace.jsonl")
         )
         router.trace = trace
+        router.live_budget = self.live_budget
         tools = ToolRegistry()
         pipeline = ResearchPipeline(self.repository, settings, router, tools, trace)
         discovery = DiscoveryService(

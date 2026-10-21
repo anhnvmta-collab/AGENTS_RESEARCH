@@ -110,7 +110,9 @@ class ResearchRun(Schema):
     project_id: UUID
     question: ResearchQuestion
     mode: Mode = Mode.REVIEW
-    status: Literal["CREATED", "RUNNING", "PAUSED", "FAILED", "COMPLETED", "REJECTED"] = "CREATED"
+    status: Literal[
+        "CREATED", "RUNNING", "PAUSED", "FAILED", "COMPLETED", "REJECTED", "BUDGET_EXHAUSTED"
+    ] = "CREATED"
     stage: int = Field(default=0, ge=0)
     workflow_version: int = 1
     config_fingerprint: str

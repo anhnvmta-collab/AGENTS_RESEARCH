@@ -194,6 +194,8 @@ class SQLRepository:
         with self.engine.begin() as connection:
             if table_name == "research_runs":
                 self._assert_lease(connection, identity)
+            if table_name == "artifacts" and run_id:
+                self._assert_lease(connection, run_id)
             row_identity = (
                 record_id(run_id, table_name, identity, getattr(obj, "revision", 1))
                 if run_id and table_name in DOMAIN_TABLES

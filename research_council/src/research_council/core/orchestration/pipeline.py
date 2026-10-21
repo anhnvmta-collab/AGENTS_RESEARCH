@@ -111,6 +111,8 @@ class ResearchPipeline:
         avoid_provider: str | None = None,
     ) -> Schema:
         agent = agent_type(self.router, self.tools, self.trace, avoid_provider=avoid_provider)
+        if self.router.live_budget:
+            self.router.live_budget.ensure_active()
         return await self.concurrency.agent(lambda: agent.run(value))
 
     def stages(self, mode: Mode) -> list[Stage]:
@@ -150,7 +152,23 @@ class ResearchPipeline:
         return stages
 
     def engine(self, mode: Mode) -> WorkflowEngine:
-        return WorkflowEngine(self.repository, self.settings, self.stages(mode), self.trace)
+        stages = self.stages(mode)
+        if self.router.live_budget:
+            stages = [self._budgeted_stage(stage) for stage in stages]
+        return WorkflowEngine(self.repository, self.settings, stages, self.trace)
+
+    def _budgeted_stage(self, stage: Stage) -> Stage:
+        async def execute(run: ResearchRun, state: WorkflowState) -> WorkflowState:
+            ledger = self.router.live_budget
+            if ledger:
+                ledger.ensure_active()
+            result = await stage.execute(run, state)
+            self.repository.checkpoint(run, {"state": result})
+            if ledger:
+                ledger.ensure_active()
+            return result
+
+        return Stage(stage.name, execute, stage.approvals_before)
 
     async def plan(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
         value = QuestionInput(
@@ -427,9 +445,17 @@ class ResearchPipeline:
             if item.paper.paper_id in verified
             and SourceIntegrityGate().evaluate([item.paper]).passed
         ]
+        maximum = (
+            min(
+                self.settings.research.max_core_papers,
+                self.router.live_budget.budget.max_core_papers,
+            )
+            if self.router.live_budget
+            else self.settings.research.max_core_papers
+        )
         shortlist = diverse_shortlist(
             eligible,
-            self.settings.research.max_core_papers,
+            maximum,
             vocabulary("expected_method_families.yaml", "families"),
             utcnow().year,
         )
@@ -437,6 +463,8 @@ class ResearchPipeline:
             shortlist.paper_ids,
             shortlist.selection_reasons,
         )
+        if self.router.live_budget:
+            self.router.live_budget.select_core(len(state.core_paper_ids))
 
     def _canonicalize(self, candidates: list[PaperCandidate]) -> list[PaperCandidate]:
         library = self.repository.list_all("papers", Paper)
@@ -471,6 +499,8 @@ class ResearchPipeline:
         ]
 
         async def read(paper: Paper) -> ReadingOutput:
+            if self.router.live_budget:
+                self.router.live_budget.consume("deep_reads")
             chunks = LocatedChunker().chunk(paper)
             known_chunks = {chunk.chunk_id for chunk in state.chunks}
             state.chunks.extend(chunk for chunk in chunks if chunk.chunk_id not in known_chunks)
@@ -713,6 +743,8 @@ class PipelineNoveltyOperations:
         self.pipeline, self.run = pipeline, run
 
     async def generate(self, state: WorkflowState, iteration: int) -> list[NoveltyCandidate]:
+        if self.pipeline.router.live_budget:
+            self.pipeline.router.live_budget.begin_novelty(iteration)
         if not state.gaps:
             return []
         value = NoveltyInput(

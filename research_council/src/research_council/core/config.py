@@ -5,11 +5,13 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import Field, PrivateAttr, model_validator
 
 from research_council.schemas.models import Schema, TaskProfile
+from research_council.validation.budget import LiveResearchBudget
 
 
 class Route(Schema):
@@ -71,7 +73,8 @@ class Settings(Schema):
         default_factory=lambda: {profile: [Route()] for profile in TaskProfile}
     )
     role_routes: dict[str, list[Route]] = Field(default_factory=dict)
-    science_benchmark: str | None = None
+    science_benchmark: Literal["CS_FHSS_DOA_FPGA"] | None = None
+    live_research_budget: LiveResearchBudget | None = None
     retries: int = Field(default=2, ge=0, le=5)
     timeout_seconds: float = Field(default=60, gt=0, le=600)
     retry_base_seconds: float = Field(default=0.5, ge=0, le=30)

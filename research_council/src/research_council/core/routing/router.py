@@ -13,6 +13,7 @@ from research_council.core.tracing import TraceEvent, TraceSink
 from research_council.providers.base import BaseLLMProvider, LLMRequest, LLMResponse, ProviderError
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import ModelExecution, Schema, TaskProfile, utcnow
+from research_council.validation.budget import BudgetLedger
 
 T = TypeVar("T", bound=Schema)
 
@@ -41,6 +42,7 @@ class ModelRouter:
         self.reserved = 0.0
         self.lock = asyncio.Lock()
         self.last_success: dict[str, ModelExecution] = {}
+        self.live_budget: BudgetLedger | None = None
 
     async def generate(
         self,
@@ -93,7 +95,11 @@ class ModelRouter:
                         or self.cost + self.reserved + reservation
                         > self.settings.research.budget_usd
                     ):
+                        if self.live_budget:
+                            self.live_budget.stop("existing run model/cost limit reached")
                         raise BudgetExceeded("Research run model budget exhausted")
+                    if self.live_budget:
+                        self.live_budget.reserve_model(reservation)
                     self.calls += 1
                     self.reserved += reservation
                 started = perf_counter()
@@ -186,6 +192,8 @@ class ModelRouter:
                     self.repository.save(
                         "model_executions", execution.execution_id, execution, self.run_id
                     )
+                    if self.live_budget:
+                        self.live_budget.settle_model(reservation, execution.estimated_cost or 0)
                     if self.trace:
                         self.trace.emit(
                             TraceEvent(

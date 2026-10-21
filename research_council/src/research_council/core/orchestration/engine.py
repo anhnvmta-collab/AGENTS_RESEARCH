@@ -13,6 +13,7 @@ from research_council.core.orchestration.state import WorkflowState
 from research_council.core.tracing import TraceEvent, TraceSink
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import ResearchQuestion, ResearchRun, WorkflowEvent, utcnow
+from research_council.validation.budget import LiveBudgetExhausted
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -100,7 +101,7 @@ class WorkflowEngine:
                 raise ValueError(
                     "Run configuration/workflow mismatch; use its original configuration"
                 )
-            if run.status in ("COMPLETED", "REJECTED"):
+            if run.status in ("COMPLETED", "REJECTED", "BUDGET_EXHAUSTED"):
                 return run
             state = self.load_state(run_id)
             if state.pending_approval:
@@ -136,6 +137,17 @@ class WorkflowEngine:
                     )
                     self.repository.checkpoint(run, {"state": state})
                     next_state = await stage.execute(run, state.model_copy(deep=True))
+                except LiveBudgetExhausted:
+                    run.status = "BUDGET_EXHAUSTED"
+                    run.warnings.append(
+                        "BUDGET_EXHAUSTED: partial results retained; no additional expensive operation admitted."
+                    )
+                    interrupted = self.load_state(run_id)
+                    interrupted.events.append(
+                        WorkflowEvent(run_id=run_id, stage=stage.name, event="STAGE_FAILED")
+                    )
+                    self.repository.checkpoint(run, {"state": interrupted})
+                    return run
                 except asyncio.CancelledError:
                     run.status = "FAILED"
                     run.warnings.append(

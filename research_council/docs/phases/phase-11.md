@@ -52,3 +52,12 @@ operator review and artifact/reference verification. Creating a benchmark does n
 Human-sampling, gap review, independent review models and experimental/replication facts are
 required at their respective levels. Checks: formatter/lint/mypy passed (91 source files);
 130 offline tests passed, 0 failed.
+
+## 11G live cost and operation controls
+Added persistent LiveResearchBudget admission for conservative model-cost reservations, each
+model attempt, each scholarly HTTP attempt (including metadata/retries), CORE selection, deep
+reads and novelty iterations. Lease-fenced budget artifacts survive resume; stage wrappers retain
+partial successful results before BUDGET_EXHAUSTED. Scientific live creation/runtime requires a
+stored explicit paid-API confirmation. Provider billing remains external; estimates and unknown
+actual billed costs are distinguished. Checks: formatter/lint/mypy passed (92 source files);
+136 offline tests passed, 0 failed, including concurrent admission and partial-stage recovery.
