@@ -29,3 +29,11 @@ reproducible real-evidence sampling and per-number hardware provenance. Missing 
 remain null. Source-reported numbers and proposed estimates cannot become benchmark measurements.
 Extended typed gap/candidate fields and extraction/math/hardware prompts without relaxing V1 gates.
 Checks: formatter/lint/mypy passed (87 source files); 125 offline tests passed, 0 failed.
+
+## 11D model disagreement and task comparison
+Added execution-validated model positions, preserved opposing positions and explicit named-human
+resolution. Novelty reviewer/judge disagreements are projected from actual reports/executions,
+not inferred from generator proposals. High unresolved disagreement additionally blocks publication.
+Model comparison reports all configured task profiles with nullable independent human scores and
+actual billed cost; no universal model ranking is inferred. Checks: formatter/lint/mypy passed
+(89 source files); 127 offline tests passed, 0 failed.

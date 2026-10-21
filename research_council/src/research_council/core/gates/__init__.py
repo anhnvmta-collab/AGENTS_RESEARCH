@@ -354,4 +354,12 @@ def publication_gate(
         result.reasons.append(
             "No current contribution revision survives independent novelty checks."
         )
+    if any(
+        item.severity == "HIGH" and item.resolution_status != "RESOLVED"
+        for item in state.model_disagreements
+    ):
+        result.passed = False
+        result.reasons.append(
+            "Unresolved high-severity independent model disagreement requires human review."
+        )
     return result

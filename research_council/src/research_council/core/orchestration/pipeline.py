@@ -581,6 +581,21 @@ class ResearchPipeline:
         return state
 
     async def audit(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
+        if self.settings.science_benchmark:
+            from research_council.validation.disagreement import novelty_disagreements
+
+            observed = novelty_disagreements(
+                state, self.repository.list_model_executions(run.run_id)
+            )
+            known = {
+                (item.subject_id, item.execution_A, item.execution_B)
+                for item in state.model_disagreements
+            }
+            state.model_disagreements.extend(
+                item
+                for item in observed
+                if (item.subject_id, item.execution_A, item.execution_B) not in known
+            )
         value = AuditInput(
             task="Independently audit citation metadata and evidence consistency",
             papers=[item.paper for item in state.candidates],

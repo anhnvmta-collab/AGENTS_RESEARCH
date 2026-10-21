@@ -32,6 +32,7 @@ from research_council.schemas.models import (
     TargetedSearchRequest,
     WorkflowEvent,
 )
+from research_council.validation.disagreement import ModelDisagreement
 from research_council.validation.identity import PaperIdentityAudit
 
 
@@ -72,3 +73,4 @@ class WorkflowState(Schema):
     identity_audits: list[PaperIdentityAudit] = Field(default_factory=list)
     identity_observations: dict[str, list[PaperMetadata]] = Field(default_factory=dict)
     shortlist_reasons: dict[UUID, list[str]] = Field(default_factory=dict)
+    model_disagreements: list[ModelDisagreement] = Field(default_factory=list)
