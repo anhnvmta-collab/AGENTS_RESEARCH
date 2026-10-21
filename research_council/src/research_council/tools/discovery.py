@@ -124,6 +124,10 @@ class DiscoveryService:
 
     async def citation_search(self, value: SearchInput) -> CandidatesOutput:
         result = CandidatesOutput()
+        if value.seed_papers and not self.citations:
+            result.failures.append(
+                "No citation adapters enabled; citation-chain coverage unavailable."
+            )
 
         async def one(adapter: CitationAdapter, paper: Paper) -> None:
             async with self.semaphore:

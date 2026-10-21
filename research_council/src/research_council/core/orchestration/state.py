@@ -28,6 +28,7 @@ from research_council.schemas.models import (
     Schema,
     SearchAttempt,
     SearchQuery,
+    TargetedSearchRequest,
     WorkflowEvent,
 )
 
@@ -58,6 +59,7 @@ class WorkflowState(Schema):
     synthesis: SynthesisOutput = Field(default_factory=SynthesisOutput)
     novelty_iteration: int = 0
     pending_targeted_queries: list[str] = Field(default_factory=list)
+    targeted_requests: list[TargetedSearchRequest] = Field(default_factory=list)
     completed_approvals: list[str] = Field(default_factory=list)
     pending_approval: str | None = None
     limitations: list[str] = Field(default_factory=list)

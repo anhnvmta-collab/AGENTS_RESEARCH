@@ -12,6 +12,7 @@ from research_council.schemas.models import (
     NoveltyDecision,
     PriorArtReport,
     ReviewerReport,
+    TargetedSearchRequest,
 )
 
 
@@ -52,14 +53,87 @@ class NoveltyLoop:
         state: WorkflowState,
         checkpoint: Callable[[WorkflowState], Awaitable[None]] | None = None,
     ) -> WorkflowState:
-        if any(gate.gate == 2 and gate.passed for gate in state.gates):
-            return state
+        # Cached booleans are insufficient after resume or evidence changes.
+        for cached in [item for item in state.gates if item.gate == 2 and item.passed]:
+            candidate = next(
+                (
+                    item
+                    for item in state.novelty_candidates
+                    if item.candidate_id == cached.candidate_id
+                    and item.revision == cached.candidate_revision
+                ),
+                None,
+            )
+            prior = next(
+                (
+                    item
+                    for item in reversed(state.prior_art)
+                    if candidate
+                    and item.candidate_id == candidate.candidate_id
+                    and item.revision == candidate.revision
+                ),
+                None,
+            )
+            review = next(
+                (
+                    item
+                    for item in reversed(state.reviews)
+                    if candidate
+                    and item.candidate_id == candidate.candidate_id
+                    and item.revision == candidate.revision
+                ),
+                None,
+            )
+            decision = next(
+                (
+                    item
+                    for item in reversed(state.decisions)
+                    if candidate
+                    and item.candidate_id == candidate.candidate_id
+                    and item.revision == candidate.revision
+                ),
+                None,
+            )
+            cached.passed = False
+            if candidate and prior and review and decision:
+                checked = self.gate.evaluate(
+                    candidate,
+                    state.evidence,
+                    prior,
+                    review,
+                    decision,
+                    papers=[item.paper for item in state.candidates],
+                    executions=self.execution_records() if self.execution_records else [],
+                    conflicts=state.conflicts,
+                )
+                cached.passed, cached.reasons = checked.passed, checked.reasons
+                if checked.passed and not any(
+                    item.candidate_id == candidate.candidate_id
+                    and item.revision > candidate.revision
+                    for item in state.novelty_candidates
+                ):
+                    return state
+
+        def saturated() -> bool:
+            return bool(state.saturation and state.saturation[-1].status == "SEARCH_SATURATED")
+
+        if saturated():
+            return self.finish_unresolved(
+                state, "SEARCH_SATURATED: " + "; ".join(state.saturation[-1].reasons)
+            )
         if state.pending_targeted_queries:
             state = await self.operations.targeted_search(state.pending_targeted_queries, state)
             state.pending_targeted_queries = []
+            for request in state.targeted_requests:
+                if request.status == "PENDING":
+                    request.status = "COMPLETED"
             if checkpoint:
                 await checkpoint(state)
         for index in range(state.novelty_iteration, self.max_iterations):
+            if saturated():
+                return self.finish_unresolved(
+                    state, "SEARCH_SATURATED: no additional evidence after completed searches."
+                )
             candidates = await self.operations.generate(state, index + 1)
             if not candidates:
                 state.limitations.append("No evidence-grounded novelty candidates were available.")
@@ -114,7 +188,21 @@ class NoveltyLoop:
                 state.decisions.append(decision)
                 state.gates.append(gate)
                 survived = survived or gate.passed
-                followups.extend(decision.required_followup_searches or candidate.keywords)
+                if decision.verdict == "REVISE":
+                    queries = (
+                        decision.required_followup_searches
+                        or candidate.keywords
+                        or [candidate.normalized_claim]
+                    )
+                    followups.extend(queries)
+                    state.targeted_requests.append(
+                        TargetedSearchRequest(
+                            candidate_id=candidate.candidate_id,
+                            revision=candidate.revision,
+                            queries=queries[:30],
+                            reasons=decision.remaining_risks,
+                        )
+                    )
             state.novelty_iteration = index + 1
             state.pending_targeted_queries = (
                 list(dict.fromkeys(followups))
@@ -125,14 +213,30 @@ class NoveltyLoop:
                 await checkpoint(state)
             if survived:
                 break
+            if not followups:
+                break
             if index + 1 < self.max_iterations:
                 state = await self.operations.targeted_search(state.pending_targeted_queries, state)
                 state.pending_targeted_queries = []
+                for request in state.targeted_requests:
+                    if request.status == "PENDING":
+                        request.status = "COMPLETED"
                 if checkpoint:
                     await checkpoint(state)
         if state.novelty_iteration >= self.max_iterations:
-            for decision in state.decisions:
-                if decision.verdict == "REVISE":
-                    decision.verdict = "UNRESOLVED"
-                    decision.remaining_risks.append("Configured novelty iteration limit reached.")
+            return self.finish_unresolved(state, "Configured novelty iteration limit reached.")
+        return state
+
+    @staticmethod
+    def finish_unresolved(state: WorkflowState, reason: str) -> WorkflowState:
+        state.pending_targeted_queries = []
+        for request in state.targeted_requests:
+            if request.status == "PENDING":
+                request.status = "SKIPPED"
+                request.reasons.append(reason)
+        for decision in state.decisions:
+            if decision.verdict == "REVISE":
+                decision.verdict = "UNRESOLVED"
+                decision.remaining_risks.append(reason)
+        state.limitations.append(reason)
         return state

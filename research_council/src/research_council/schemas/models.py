@@ -462,6 +462,16 @@ class HardwareAssessment(Schema):
     parameter_evidence: dict[str, list[UUID]] = Field(default_factory=dict)
 
 
+class TargetedSearchRequest(Schema):
+    request_id: UUID = Field(default_factory=uuid4)
+    candidate_id: UUID
+    revision: int = Field(ge=1)
+    queries: list[str] = Field(min_length=1, max_length=30)
+    reasons: list[str] = Field(default_factory=list)
+    status: Literal["PENDING", "COMPLETED", "SKIPPED"] = "PENDING"
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class ExperimentPlan(Schema):
     experiment_id: UUID = Field(default_factory=uuid4)
     objective: str = "Validate a hypothesis; no measured results available."
@@ -543,6 +553,7 @@ class ResearchKnowledgeMap(Schema):
     claim_ids: list[UUID] = Field(default_factory=list)
     gap_ids: list[UUID] = Field(default_factory=list)
     coverage_score: Score = 0
+    coverage_basis: str = "Observed corpus membership; not universal literature coverage."
 
 
 ResearchGap = Gap

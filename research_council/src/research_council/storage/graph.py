@@ -42,6 +42,7 @@ def project_graph(
         node("papers", source_candidate.paper.paper_id, source_candidate.paper)
     collections: list[tuple[str, Sequence[Schema], str]] = [
         ("chunks", state.chunks, "chunk_id"),
+        ("targeted_search_requests", state.targeted_requests, "request_id"),
         ("evidence", state.evidence, "evidence_id"),
         ("claims", state.claims, "claim_id"),
         ("gaps", state.gaps, "gap_id"),
@@ -133,6 +134,12 @@ def project_graph(
                 "prior_art_source",
             )
             edge(source, ("prior_art_matches", match.match_id, 1), "ranked_overlap")
+    for request in state.targeted_requests:
+        edge(
+            ("targeted_search_requests", request.request_id, 1),
+            ("novelty_candidates", request.candidate_id, request.revision),
+            "investigates_revision",
+        )
     for review_report in state.reviews:
         edge(
             ("reviews", review_report.review_id, 1),

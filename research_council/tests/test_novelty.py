@@ -11,6 +11,7 @@ from research_council.schemas.models import (
     Paper,
     PaperMetadata,
     PriorArtReport,
+    QualityGateResult,
     ReviewerReport,
     ReviewReason,
     SearchAttempt,
@@ -140,3 +141,51 @@ async def test_novelty_loop_terminates_and_searches_again():
 
 def test_publication_gate_cannot_pass_empty_work():
     assert not PublicationReadinessGate().evaluate([], [], [], [], [], []).passed
+
+
+async def test_saturation_stops_search_and_never_promotes_revision():
+    from research_council.core.saturation import SearchSaturationDetector
+
+    candidate, _ = candidate_and_evidence()
+    signal = SearchSaturationDetector(patience=1).observe(
+        set(), set(), 0, 0, [], search_complete=True
+    )
+    state = WorkflowState(
+        novelty_candidates=[candidate],
+        decisions=[NoveltyDecision(candidate_id=candidate.candidate_id, revision=1)],
+        saturation=[signal],
+    )
+
+    class Operations:
+        async def generate(self, state, iteration):
+            raise AssertionError("Saturated search should not invoke generation")
+
+    result = await NoveltyLoop(Operations()).run(state)
+    assert result.decisions[0].verdict == "UNRESOLVED"
+    assert "SEARCH_SATURATED" in result.limitations[-1]
+
+
+async def test_resume_does_not_trust_cached_gate_boolean():
+    class Operations:
+        async def generate(self, state, iteration):
+            return []
+
+    state = WorkflowState(gates=[QualityGateResult(gate=2, passed=True)])
+    result = await NoveltyLoop(Operations()).run(state)
+    assert not result.gates[0].passed
+
+
+def test_observed_knowledge_map_links_methods_without_universal_coverage():
+    from test_regressions import human_ready_state
+
+    from research_council.knowledge.mapping import build_knowledge_map
+
+    state = human_ready_state()
+    state.candidates[0].paper.metadata.title = "Unit FPGA compressed sensing example"
+    root = build_knowledge_map("FHSS", state)
+    fpga = next(
+        child for branch in root.subtopics for child in branch.subtopics if child.topic == "FPGA"
+    )
+    assert fpga.paper_ids == [state.candidates[0].paper.paper_id]
+    assert fpga.claim_ids == [state.claims[0].claim_id] and fpga.coverage_score == 1
+    assert "not universal" in fpga.coverage_basis

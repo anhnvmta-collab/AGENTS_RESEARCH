@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable
 from typing import TypeVar
+from uuid import uuid5
 
 from research_council import agents
 from research_council.agents.base import BaseResearchAgent
@@ -40,9 +41,11 @@ from research_council.core.orchestration.state import WorkflowState
 from research_council.core.routing import ModelRouter
 from research_council.core.saturation import SearchSaturationDetector
 from research_council.core.tracing import TraceSink
+from research_council.knowledge.mapping import build_knowledge_map
 from research_council.knowledge.retrieval import LocatedChunker
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import (
+    ClaimType,
     Gap,
     GapType,
     HardwareAssessment,
@@ -54,7 +57,7 @@ from research_council.schemas.models import (
     PaperCandidate,
     PaperScore,
     PriorArtReport,
-    ResearchKnowledgeMap,
+    ResearchClaim,
     ResearchPlan,
     ResearchRun,
     ReviewerReport,
@@ -460,16 +463,7 @@ class ResearchPipeline:
             state.limitations.append(
                 "AUDIT requires an explicit --claim for contribution-specific adversarial review."
             )
-        state.knowledge_map = ResearchKnowledgeMap(
-            topic=run.question.topic,
-            subtopics=[
-                ResearchKnowledgeMap(topic=perspective.name) for perspective in state.perspectives
-            ],
-            paper_ids=[item.paper.paper_id for item in state.candidates],
-            claim_ids=[item.claim_id for item in state.claims],
-            gap_ids=[item.gap_id for item in state.gaps],
-            coverage_score=0,
-        )
+        state.knowledge_map = build_knowledge_map(run.question.topic, state)
         return state
 
     async def novelty(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
@@ -650,6 +644,24 @@ class PipelineNoveltyOperations:
             candidate.revision = iteration
             if self.run.mode == Mode.AUDIT and self.run.question.audit_claim:
                 candidate.normalized_claim = self.run.question.audit_claim
+            candidate.novelty_claim_id = uuid5(
+                candidate.candidate_id, f"novelty-claim:{candidate.revision}"
+            )
+            premises = [
+                item for item in state.evidence if item.evidence_id in candidate.evidence_ids
+            ]
+            claim = ResearchClaim(
+                claim_id=candidate.novelty_claim_id,
+                statement=candidate.normalized_claim,
+                claim_type=ClaimType.HYPOTHESIS,
+                primary=False,
+                source_paper_ids=list(dict.fromkeys(item.paper_id for item in premises)),
+                evidence_ids=candidate.evidence_ids,
+                reviewer_status="NOVELTY_HYPOTHESIS_REQUIRES_EXPERIMENTAL_PROOF",
+            )
+            state.claims = [item for item in state.claims if item.claim_id != claim.claim_id] + [
+                claim
+            ]
         return candidates
 
     async def prior_art(self, candidate: NoveltyCandidate, state: WorkflowState) -> PriorArtReport:

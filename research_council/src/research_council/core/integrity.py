@@ -186,6 +186,9 @@ def validate_graph(state: WorkflowState) -> None:
     for report in reports:
         if (report.candidate_id, report.revision) not in revisions:
             raise ValueError("Report references unknown candidate revision")
+    for request in state.targeted_requests:
+        if (request.candidate_id, request.revision) not in revisions:
+            raise ValueError("Targeted search references unknown candidate revision")
     for report in state.prior_art:
         for match in report.matches:
             if (
