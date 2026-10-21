@@ -14,9 +14,24 @@ class HardwareArchitect(BaseResearchAgent[AnalysisInput, HardwareAssessment]):
     prompt_file = "hardware_architect.md"
 
     async def execute(self, value: AnalysisInput) -> HardwareAssessment:
-        return validate_hardware(
+        output = validate_hardware(
             await super().execute(value),
             {item.evidence_id for item in value.evidence},
             {paper.paper_id for paper in value.papers},
             value.evidence,
         )
+        if self.router.settings.science_benchmark:
+            from research_council.validation.quality import hardware_parameter_rows
+
+            for row in hardware_parameter_rows([output], value.evidence):
+                output.parameter_provenance[str(row["parameter"])] = str(row["provenance"])  # type: ignore[assignment]
+                if row["notes"]:
+                    output.unknowns.append(str(row["notes"]))
+            if output.measurement_status == "MEASURED":
+                output.measurement_status = "ESTIMATED"
+                if output.feasibility == "GREEN":
+                    output.feasibility = "YELLOW"
+                output.unknowns.append(
+                    "Scientific validation has not ingested independent measurements."
+                )
+        return output

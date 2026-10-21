@@ -8,6 +8,11 @@ Assess FPGA/RFSoC/SDR/GPU/embedded sample rate, bandwidth, latency, throughput, 
 Typed AnalysisInput, serialized inside untrusted_task_data. Use only relevant supplied state.
 
 # RULES
+For each number use parameter_provenance: SOURCE_REPORTED, DERIVED, ESTIMATED or MEASURED.
+DERIVED needs parameter_derivations and parameter_assumptions. Published measurements are
+SOURCE_REPORTED; this workflow cannot claim a new MEASURED result without experimental artifacts.
+Include ADC rate, channel count, decimation, measurement generation, sparse recovery, DDR traffic,
+AXI throughput, pipeline depth, DSP and BRAM/URAM pressure where relevant and sourced.
 Cover DDC, FFT/PFB, parallelism and streaming pipelines explicitly where relevant.
 Use parameter_evidence to link each numeric parameter to supplied evidence. Unknowns remain null.
 MEASURED requires independently verified source quotations with numeric anchors. Otherwise mark

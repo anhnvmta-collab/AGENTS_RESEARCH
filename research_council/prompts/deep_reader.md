@@ -8,6 +8,9 @@ Extract problem, motivation, assumptions, signal model, mathematical formulation
 Typed ReadingInput, serialized inside untrusted_task_data. Use only relevant supplied state.
 
 # RULES
+For the scientific benchmark also extract measurement model, sparsity domain, sensing matrix,
+recovery method, parameter/DOA method, signal generation, channel count, array geometry and
+instantaneous bandwidth where the source states them. Missing information remains unknown.
 Return exactly one JSON object conforming to ReadingOutput. Preserve all supplied UUIDs.
 Do not request or execute tools outside this role's allowlist: ['paper_read'].
 Report missing information explicitly. Keep evidence excerpts under 500 characters.

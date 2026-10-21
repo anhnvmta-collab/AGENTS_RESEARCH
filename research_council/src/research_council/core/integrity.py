@@ -126,6 +126,7 @@ def validate_graph(state: WorkflowState) -> None:
         require(candidate.evidence_ids, evidence, "novelty-to-evidence")
         if candidate.novelty_claim_id:
             require([candidate.novelty_claim_id], claims, "novelty-to-claim")
+        require(candidate.trigger_prior_art_ids, papers, "revision-to-trigger-prior-art")
     for item in evidence.values():
         require([item.paper_id], papers, "evidence-to-paper")
         paper = papers[item.paper_id]
@@ -172,6 +173,7 @@ def validate_graph(state: WorkflowState) -> None:
             if unresolved_conflict(claim, state.conflicts):
                 raise ValueError("Verified claim has an unresolved evidence conflict")
     for gap in gaps.values():
+        require(gap.known_prior_approaches, papers, "gap-to-known-prior-approach")
         require(gap.evidence_ids, evidence, "gap-to-evidence")
         require(gap.claim_ids, claims, "gap-to-claim")
     for conflict in state.conflicts:

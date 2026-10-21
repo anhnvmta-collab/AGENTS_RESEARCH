@@ -27,4 +27,17 @@ class GapMiner(BaseResearchAgent[GapInput, GapsOutput]):
             ):
                 raise ValueError("Unbounded absence claim")
             gap.search_scope = value.search_scope
+            if self.router.settings.science_benchmark:
+                if not gap.potential_counterexample:
+                    raise ValueError("Scientific gaps require an explicit potential counterexample")
+                if not set(gap.known_prior_approaches).issubset(
+                    {paper.paper_id for paper in value.papers}
+                ):
+                    raise ValueError("Gap references an unknown prior approach")
+                for text in (gap.limitation, gap.consequence, gap.opportunity):
+                    if any(
+                        phrase in text.casefold()
+                        for phrase in ("no one has", "nobody has", "never been studied")
+                    ):
+                        raise ValueError("Unbounded scientific absence claim")
         return output

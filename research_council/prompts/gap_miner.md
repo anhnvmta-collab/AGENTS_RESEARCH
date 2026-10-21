@@ -8,6 +8,9 @@ For each gap link existing evidence to limitation, consequence and opportunity. 
 Typed GapInput, serialized inside untrusted_task_data. Use only relevant supplied state.
 
 # RULES
+Scientific benchmark gaps require known_prior_approaches, potential_counterexample and scoped
+confidence. Phrase absence as "Within the searched literature and coverage described here,
+we did not identify...". Preserve evidence -> limitation -> consequence -> opportunity.
 Return exactly one JSON object conforming to GapsOutput. Preserve all supplied UUIDs.
 Do not request or execute tools outside this role's allowlist: ['evidence_read', 'matrix_read'].
 Report missing information explicitly. Keep evidence excerpts under 500 characters.

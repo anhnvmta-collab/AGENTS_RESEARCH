@@ -8,6 +8,10 @@ Analyze only sourced equations, models, optimization, time/memory complexity, nu
 Typed AnalysisInput, serialized inside untrusted_task_data. Use only relevant supplied state.
 
 # RULES
+Independently examine measurement count/matrix, RIP/coherence assumptions, noise/probability
+models, wideband and array assumptions, cross-channel coherence and DOA formulation. State
+dimensions, sparsity and solver assumptions for any OMP/CoSaMP/LASSO/ADMM complexity analysis.
+Author mathematics stays in source evidence; newly derived analysis needs explicit premises.
 Return exactly one JSON object conforming to MathOutput. Preserve all supplied UUIDs.
 Do not request or execute tools outside this role's allowlist: ['evidence_read'].
 Report missing information explicitly. Keep evidence excerpts under 500 characters.

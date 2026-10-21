@@ -381,6 +381,9 @@ class Gap(Schema):
     consequence: str
     opportunity: str
     search_scope: str
+    known_prior_approaches: list[UUID] = Field(default_factory=list)
+    confidence: Score = 0
+    potential_counterexample: str | None = None
 
 
 class NoveltyCandidate(Schema):
@@ -399,6 +402,12 @@ class NoveltyCandidate(Schema):
     generation_execution_id: UUID | None = None
     generator_provider: str | None = None
     novelty_claim_id: UUID | None = None
+    mathematical_change: str = ""
+    implementation_change: str = ""
+    falsification_test: str = ""
+    revision_summary: str = ""
+    change_reason: str = ""
+    trigger_prior_art_ids: list[UUID] = Field(default_factory=list)
 
 
 class PriorArtMatch(Schema):
@@ -469,6 +478,11 @@ class HardwareAssessment(Schema):
     unknowns: list[str] = Field(default_factory=list)
     measurement_status: Literal["ESTIMATED", "MEASURED", "UNKNOWN"] = "UNKNOWN"
     parameter_evidence: dict[str, list[UUID]] = Field(default_factory=dict)
+    parameter_provenance: dict[
+        str, Literal["SOURCE_REPORTED", "DERIVED", "ESTIMATED", "MEASURED"]
+    ] = Field(default_factory=dict)
+    parameter_assumptions: dict[str, list[str]] = Field(default_factory=dict)
+    parameter_derivations: dict[str, str] = Field(default_factory=dict)
 
 
 class TargetedSearchRequest(Schema):

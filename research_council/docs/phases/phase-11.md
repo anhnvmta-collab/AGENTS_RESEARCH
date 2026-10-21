@@ -22,3 +22,10 @@ Diversity selection reserves older, recent low/unknown-citation and implementati
 slots permit. Seed recall, lexical method/concept coverage and explicitly labelled citation-edge
 recall have denominators and null for unmeasured cases. No scalar confidence clears a conflict.
 Checks: formatter/lint/mypy passed (86 source files); 122 offline tests passed, 0 failed.
+
+## 11C scientific quality metrics
+Added grounded/location metrics, independently labelled entailment/support/contradiction metrics,
+reproducible real-evidence sampling and per-number hardware provenance. Missing human labels
+remain null. Source-reported numbers and proposed estimates cannot become benchmark measurements.
+Extended typed gap/candidate fields and extraction/math/hardware prompts without relaxing V1 gates.
+Checks: formatter/lint/mypy passed (87 source files); 125 offline tests passed, 0 failed.
