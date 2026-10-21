@@ -1,2 +1,2 @@
 # Retain exact exported bytes so archived run_manifest hashes survive Git checkout.
-research_council/docs/audits/phase11-prepared/** -text whitespace=cr-at-eol
+research_council/docs/audits/phase11-prepared/** -text whitespace=cr-at-eol,-blank-at-eof
