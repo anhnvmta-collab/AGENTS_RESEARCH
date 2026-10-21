@@ -19,6 +19,12 @@ class SearchSaturationSignal(Schema):
     low_information_rounds: int = Field(ge=0)
     reasons: list[str]
     created_at: datetime = Field(default_factory=utcnow)
+    queries: int | None = Field(default=None, ge=0)
+    papers_found: int | None = Field(default=None, ge=0)
+    new_core: int | None = Field(default=None, ge=0)
+    core_ids: list[UUID] = Field(default_factory=list)
+    observed_method_families: list[str] = Field(default_factory=list)
+    citation_seed_ids: list[UUID] = Field(default_factory=list)
 
 
 class SearchSaturationDetector:

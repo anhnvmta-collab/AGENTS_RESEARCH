@@ -294,6 +294,27 @@ class ResearchPipeline:
     ) -> None:
         attempts = state.search_history[history_start:]
         complete = bool(attempts) and all(attempt.status == "SUCCESS" for attempt in attempts)
+        methods, prior_methods, citation_seeds, prior_seeds = set(), set(), set(), set()
+        if self.settings.science_benchmark:
+            from research_council.validation.coverage import observed_terms, vocabulary
+
+            methods = observed_terms(
+                " ".join(
+                    f"{item.paper.metadata.title} {item.paper.metadata.abstract or ''}"
+                    for item in state.candidates
+                ),
+                vocabulary("expected_method_families.yaml", "families"),
+            )
+            if state.saturation:
+                prior_methods = set(state.saturation[-1].observed_method_families)
+                prior_seeds = set(state.saturation[-1].citation_seed_ids)
+            citation_seeds = {
+                item.seed_paper_id
+                for item in state.search_history
+                if item.seed_paper_id
+                and item.status == "SUCCESS"
+                and item.operation in {"backward", "forward"}
+            }
         signal = SearchSaturationDetector(
             self.settings.search.saturation_patience, self.settings.search.minimum_new_unique_rate
         ).observe(
@@ -303,7 +324,28 @@ class ResearchPipeline:
             len(state.evidence),
             state.saturation,
             search_complete=complete,
+            new_method_families=len(methods - prior_methods)
+            if self.settings.science_benchmark
+            else None,
+            new_citation_clusters=len(citation_seeds - prior_seeds)
+            if self.settings.science_benchmark
+            else None,
         )
+        if self.settings.science_benchmark:
+            signal.queries = len({item.query.query_id for item in attempts if item.query})
+            signal.papers_found = sum(
+                item.result_count for item in attempts if item.status == "SUCCESS"
+            )
+            signal.new_core = len(
+                set(state.core_paper_ids)
+                - (set(state.saturation[-1].core_ids) if state.saturation else set())
+            )
+            signal.core_ids = state.core_paper_ids
+            signal.observed_method_families = sorted(methods)
+            signal.citation_seed_ids = sorted(citation_seeds, key=str)
+            signal.reasons.append(
+                "Method families are lexical proxies; citation clusters are distinct explored citation seeds. Saturation is under the configured search strategy only."
+            )
         state.saturation.append(signal)
 
     async def _discover_queries(self, state: WorkflowState, queries: list[SearchQuery]) -> None:

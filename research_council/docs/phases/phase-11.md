@@ -37,3 +37,11 @@ not inferred from generator proposals. High unresolved disagreement additionally
 Model comparison reports all configured task profiles with nullable independent human scores and
 actual billed cost; no universal model ranking is inferred. Checks: formatter/lint/mypy passed
 (89 source files); 127 offline tests passed, 0 failed.
+
+## 11E human review package and search-round measurements
+Added all eight expert-review artifacts, a seeded random evidence sample with blank human
+judgments, component/aggregate/core-selection records, closest-prior-art matrix, hardware
+assumptions and model comparison CSVs. Search rounds record query/result/new-core counts and
+explicit lexical method-family/citation-seed proxies. No coverage or measured-data claim is
+inferred from an empty package. Checks: formatter/lint/mypy passed (90 source files);
+128 offline tests passed, 0 failed.
