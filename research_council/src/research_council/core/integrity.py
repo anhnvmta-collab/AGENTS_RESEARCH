@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid5
 
 from research_council.core.grounding import grounded_excerpt
+from research_council.knowledge.retrieval import source_hash
 from research_council.schemas.models import (
+    CitationAudit,
     ConflictResolution,
     EvidenceConflict,
     NoveltyDecision,
@@ -43,6 +45,15 @@ def synchronize_conflicts(state: WorkflowState) -> None:
         (item.claim_id, tuple(sorted(map(str, item.contradicting)))) for item in state.conflicts
     }
     for claim in state.claims:
+        historical = [
+            identity
+            for item in state.conflicts
+            if item.claim_id == claim.claim_id
+            for identity in item.contradicting
+        ]
+        claim.contradicting_evidence_ids = list(
+            dict.fromkeys([*claim.contradicting_evidence_ids, *historical])
+        )
         key = (claim.claim_id, tuple(sorted(map(str, claim.contradicting_evidence_ids))))
         if claim.contradicting_evidence_ids and key not in existing:
             state.conflicts.append(
@@ -56,12 +67,29 @@ def synchronize_conflicts(state: WorkflowState) -> None:
 
 
 def unresolved_conflict(claim: ResearchClaim, conflicts: list[EvidenceConflict]) -> bool:
-    return any(
+    covered = {
+        identity
+        for item in conflicts
+        if item.conflict_id in claim.resolved_conflict_ids
+        and item.claim_id == claim.claim_id
+        and item.resolution_status == ConflictResolution.RESOLVED
+        for identity in item.contradicting
+    }
+    return not set(claim.contradicting_evidence_ids).issubset(covered) or any(
         item.claim_id == claim.claim_id
         and item.severity == "HIGH"
         and item.resolution_status != ConflictResolution.RESOLVED
         for item in conflicts
     )
+
+
+def citation_conflict_open(
+    audit: CitationAudit, claim: ResearchClaim, conflicts: list[EvidenceConflict]
+) -> bool:
+    if audit.status != VerificationStatus.CONTRADICTED:
+        return False
+    failures = {key for key, value in audit.checks.items() if value is False}
+    return failures != {"claim_evidence_consistent"} or unresolved_conflict(claim, conflicts)
 
 
 def validate_graph(state: WorkflowState) -> None:
@@ -73,7 +101,17 @@ def validate_graph(state: WorkflowState) -> None:
     claims = unique(state.claims, "claim_id")
     gaps = unique(state.gaps, "gap_id")
     unique(state.queries, "query_id")
-    unique(state.conflicts, "conflict_id")
+    conflicts = unique(state.conflicts, "conflict_id")
+    chunks = unique(state.chunks, "chunk_id")
+    for chunk in chunks.values():
+        require([chunk.paper_id], papers, "chunk-to-paper")
+        paper = papers[chunk.paper_id]
+        text = paper.page_texts.get(chunk.page, "") if chunk.page else paper.source_text or ""
+        if (
+            chunk.source_sha256 != source_hash(paper)
+            or text[chunk.start_offset : chunk.end_offset] != chunk.text
+        ):
+            raise ValueError("Source chunk hash or offsets do not match paper")
     unique(state.reviews, "review_id")
     unique(state.decisions, "decision_id")
     revisions: dict[tuple[UUID, int], Any] = {}
@@ -93,9 +131,25 @@ def validate_graph(state: WorkflowState) -> None:
             raise ValueError("Checkpoint contains ungrounded evidence in scientific graph")
         if item.provenance != paper.provenance:
             raise ValueError("Evidence provenance does not match its paper")
+        if item.source_sha256 and item.source_sha256 != source_hash(paper):
+            raise ValueError("Evidence source hash mismatch")
+        if item.chunk_id:
+            require([item.chunk_id], chunks, "evidence-to-chunk")
+            chunk = chunks[item.chunk_id]
+            if chunk.paper_id != item.paper_id or " ".join(
+                item.verbatim_excerpt.split()
+            ) not in " ".join(chunk.text.split()):
+                raise ValueError("Evidence does not quote its source chunk")
         if item.claim_id:
             require([item.claim_id], claims, "evidence-to-claim")
     for claim in claims.values():
+        require(claim.resolved_conflict_ids, conflicts, "claim-to-resolved-conflict")
+        if any(
+            conflicts[identity].claim_id != claim.claim_id
+            or conflicts[identity].resolution_status != ConflictResolution.RESOLVED
+            for identity in claim.resolved_conflict_ids
+        ):
+            raise ValueError("Claim references an unresolved or unrelated conflict")
         require(claim.source_paper_ids, papers, "claim-to-paper")
         require(
             claim.evidence_ids + claim.contradicting_evidence_ids, evidence, "claim-to-evidence"

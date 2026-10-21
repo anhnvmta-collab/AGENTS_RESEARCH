@@ -207,6 +207,27 @@ class Paper(Schema):
     source_path: str | None = None
     page_texts: dict[int, str] = Field(default_factory=dict)
 
+    @model_validator(mode="after")
+    def bounded_page_text(self) -> Self:
+        if sum(len(text) for text in self.page_texts.values()) > 200_000:
+            raise ValueError("Extracted page text exceeds the source limit")
+        return self
+
+
+class PaperChunk(Schema):
+    chunk_id: UUID
+    paper_id: UUID
+    page: int | None = Field(default=None, ge=1)
+    start_offset: int = Field(ge=0)
+    end_offset: int = Field(gt=0)
+    text: str = Field(min_length=1, max_length=8000)
+    source_sha256: str
+
+
+class RankedChunk(Schema):
+    chunk: PaperChunk
+    score: float = Field(ge=0)
+
 
 class SearchAttempt(Schema):
     attempt_id: UUID = Field(default_factory=uuid4)
@@ -285,6 +306,7 @@ class ResearchClaim(Schema):
     source_paper_ids: list[UUID] = Field(default_factory=list)
     evidence_ids: list[UUID] = Field(default_factory=list)
     contradicting_evidence_ids: list[UUID] = Field(default_factory=list)
+    resolved_conflict_ids: list[UUID] = Field(default_factory=list)
     verification_status: VerificationStatus = VerificationStatus.UNVERIFIED
     confidence: Score = 0
     reviewer_status: str = "PENDING"
@@ -298,7 +320,7 @@ class ResearchClaim(Schema):
                 raise ValueError("Verified claims require source papers and evidence")
             if self.claim_type == ClaimType.HYPOTHESIS:
                 raise ValueError("Hypotheses cannot be verified")
-            if self.contradicting_evidence_ids:
+            if self.contradicting_evidence_ids and not self.resolved_conflict_ids:
                 raise ValueError("Unresolved contradictions prevent verification")
         if self.claim_type == ClaimType.DERIVED and not self.derivation:
             raise ValueError("Derived claims require an explicit derivation")

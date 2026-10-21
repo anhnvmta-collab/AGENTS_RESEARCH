@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from pydantic import Field
 
 from research_council.core.gates import PublicationReadinessGate
-from research_council.core.integrity import unresolved_conflict
+from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.core.orchestration.engine import RunLease
 from research_council.core.orchestration.state import WorkflowState
 from research_council.repositories.store import SQLRepository
@@ -35,16 +35,11 @@ def attest_claim(
         if run.status != "PAUSED" or state.pending_approval != "before_final_report":
             raise ValueError("Scientific attestation requires the before_final_report pause point")
         claim = next((item for item in state.claims if item.claim_id == attestation.claim_id), None)
-        if (
-            claim is None
-            or not claim.evidence_ids
-            or claim.contradicting_evidence_ids
-            or claim.claim_type == "HYPOTHESIS"
-        ):
+        if claim is None or not claim.evidence_ids or claim.claim_type == "HYPOTHESIS":
             raise ValueError("Claim cannot be attested without resolved source evidence")
         papers = {item.paper.paper_id: item.paper for item in state.candidates}
         if unresolved_conflict(claim, state.conflicts) or any(
-            audit.status == VerificationStatus.CONTRADICTED
+            citation_conflict_open(audit, claim, state.conflicts)
             and (claim.claim_id in audit.claim_ids or audit.paper_id in claim.source_paper_ids)
             for audit in state.audits
         ):

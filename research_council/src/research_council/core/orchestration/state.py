@@ -17,6 +17,7 @@ from research_council.schemas.models import (
     NoveltyCandidate,
     NoveltyDecision,
     PaperCandidate,
+    PaperChunk,
     PriorArtReport,
     QualityGateResult,
     ResearchClaim,
@@ -39,6 +40,7 @@ class WorkflowState(Schema):
     search_history: list[SearchAttempt] = Field(default_factory=list)
     candidates: list[PaperCandidate] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
+    chunks: list[PaperChunk] = Field(default_factory=list)
     conflicts: list[EvidenceConflict] = Field(default_factory=list)
     claims: list[ResearchClaim] = Field(default_factory=list)
     matrix: list[LiteratureRow] = Field(default_factory=list)

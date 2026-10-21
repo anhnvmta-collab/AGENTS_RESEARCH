@@ -73,12 +73,13 @@ def synthetic_response(request: LLMRequest) -> LLMResponse:
         }
     elif role == "DeepReader":
         paper = Paper.model_validate(data["paper"])
+        source_text = data.get("chunks", [{}])[0].get("text") or paper.source_text or ""
         evidence = Evidence(
             evidence_id=uuid5(paper.paper_id, "evidence"),
             paper_id=paper.paper_id,
             evidence_type="fixture limitation",
             source_location="synthetic text",
-            verbatim_excerpt=paper.source_text or "",
+            verbatim_excerpt=source_text,
             normalized_statement="Synthetic fixture omitted latency/fixed-point evaluation.",
             extraction_agent="DeepReader",
         )

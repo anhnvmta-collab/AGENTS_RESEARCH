@@ -308,6 +308,9 @@ class SQLRepository:
         return self.get("evidence", evidence_id, Evidence)
 
     def save_claim(self, claim: ResearchClaim, run_id: UUID) -> None:
+        from research_council.core.integrity import unresolved_conflict
+        from research_council.schemas.models import EvidenceConflict
+
         claim = ResearchClaim.model_validate_json(claim.model_dump_json())
         supports = [self.get_evidence(identity, run_id) for identity in claim.evidence_ids]
         contradictions = [
@@ -324,6 +327,10 @@ class SQLRepository:
             item and item.verification_status != VerificationStatus.VERIFIED for item in supports
         ):
             raise ValueError("Verified claim requires verified supporting evidence")
+        if claim.verification_status == VerificationStatus.VERIFIED and unresolved_conflict(
+            claim, self.scientific_records("conflicts", EvidenceConflict, run_id)
+        ):
+            raise ValueError("Verified claim has unresolved evidence conflicts")
         self.save("claims", claim.claim_id, claim, run_id)
 
     def save_gap(self, gap: Gap, run_id: UUID) -> None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from research_council.core.grounding import grounded_excerpt
-from research_council.core.integrity import unresolved_conflict
+from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.schemas.models import (
     CitationAudit,
     Evidence,
@@ -182,17 +182,15 @@ class PublicationReadinessGate:
         if not primary:
             reasons.append("No primary scientific claims available.")
         for claim in primary:
-            if (
-                claim.verification_status != VerificationStatus.VERIFIED
-                or claim.contradicting_evidence_ids
-                or unresolved_conflict(claim, conflicts or [])
+            if claim.verification_status != VerificationStatus.VERIFIED or unresolved_conflict(
+                claim, conflicts or []
             ):
                 reasons.append(f"Primary claim is not verified: {claim.claim_id}")
             if not claim.source_paper_ids:
                 reasons.append(f"Primary claim has no source papers: {claim.claim_id}")
             if any(
-                audit.status == VerificationStatus.CONTRADICTED
-                and claim.claim_id in audit.claim_ids
+                citation_conflict_open(audit, claim, conflicts or [])
+                and (claim.claim_id in audit.claim_ids or audit.paper_id in claim.source_paper_ids)
                 for audit in audits
             ):
                 reasons.append(f"Unresolved citation conflict: {claim.claim_id}")

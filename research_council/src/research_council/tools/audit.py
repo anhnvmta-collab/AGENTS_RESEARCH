@@ -4,6 +4,7 @@ import asyncio
 
 from research_council.agents.contracts import AuditInput, AuditsOutput
 from research_council.core.grounding import grounded_excerpt
+from research_council.core.integrity import unresolved_conflict
 from research_council.repositories.store import normalized_title
 from research_council.schemas.models import CitationAudit, Paper, PaperMetadata, VerificationStatus
 from research_council.tools.search import MetadataAdapter
@@ -72,7 +73,7 @@ class CitationAuditService:
                     evidence_map[identity].paper_id in claim.source_paper_ids
                     for identity in claim.evidence_ids
                 )
-                and not claim.contradicting_evidence_ids
+                and not unresolved_conflict(claim, value.conflicts)
                 for claim in relevant_claims
             )
             if support_present

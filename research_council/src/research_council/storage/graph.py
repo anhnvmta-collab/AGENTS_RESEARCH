@@ -41,6 +41,7 @@ def project_graph(
     for source_candidate in state.candidates:
         node("papers", source_candidate.paper.paper_id, source_candidate.paper)
     collections: list[tuple[str, Sequence[Schema], str]] = [
+        ("chunks", state.chunks, "chunk_id"),
         ("evidence", state.evidence, "evidence_id"),
         ("claims", state.claims, "claim_id"),
         ("gaps", state.gaps, "gap_id"),
@@ -81,10 +82,18 @@ def project_graph(
             )
         )
 
+    for chunk in state.chunks:
+        edge(("chunks", chunk.chunk_id, 1), ("papers", chunk.paper_id, 1), "source_paper")
     for evidence in state.evidence:
         edge(
             ("evidence", evidence.evidence_id, 1), ("papers", evidence.paper_id, 1), "source_paper"
         )
+        if evidence.chunk_id:
+            edge(
+                ("evidence", evidence.evidence_id, 1),
+                ("chunks", evidence.chunk_id, 1),
+                "source_chunk",
+            )
     for claim in state.claims:
         for identity in claim.evidence_ids:
             edge(("claims", claim.claim_id, 1), ("evidence", identity, 1), "supporting_evidence")

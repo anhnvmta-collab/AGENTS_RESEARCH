@@ -40,6 +40,7 @@ from research_council.core.orchestration.state import WorkflowState
 from research_council.core.routing import ModelRouter
 from research_council.core.saturation import SearchSaturationDetector
 from research_council.core.tracing import TraceSink
+from research_council.knowledge.retrieval import LocatedChunker
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import (
     Gap,
@@ -373,12 +374,16 @@ class ResearchPipeline:
         ]
 
         async def read(paper: Paper) -> ReadingOutput:
+            chunks = LocatedChunker().chunk(paper)
+            known_chunks = {chunk.chunk_id for chunk in state.chunks}
+            state.chunks.extend(chunk for chunk in chunks if chunk.chunk_id not in known_chunks)
             return ReadingOutput.model_validate(
                 await self.call(
                     agents.DeepReader,
                     ReadingInput(
-                        task="Extract only source-grounded evidence and structured fields.",
+                        task=f"{run.question.topic}. Extract algorithm, signal model, sampling, bandwidth, baselines, metrics, results, limitations and reproducibility from source evidence.",
                         paper=paper,
+                        chunks=chunks,
                     ),
                 )
             )
@@ -423,6 +428,7 @@ class ResearchPipeline:
             mode=run.mode,
             papers=[self._metadata_only(item.paper) for item in state.candidates],
             evidence=state.evidence,
+            conflicts=state.conflicts,
             claims=state.claims,
         )
 
@@ -552,11 +558,12 @@ class ResearchPipeline:
             papers=[item.paper for item in state.candidates],
             claims=state.claims,
             evidence=state.evidence,
+            conflicts=state.conflicts,
         )
         result = await self.safe(
             self.call(agents.CitationAuditor, value), AuditsOutput(), state, "CitationAuditor"
         )
-        state.audits = AuditsOutput.model_validate(result).audits
+        state.audits.extend(AuditsOutput.model_validate(result).audits)
         state.limitations.append(
             "Automatic quotation/metadata checks do not replace scientific entailment review."
         )

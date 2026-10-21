@@ -71,7 +71,11 @@ def validate_analysis_claims(
             raise ValueError("Analysis claim paper mismatch")
         if not set(claim.contradicting_evidence_ids).issubset(available):
             raise ValueError("Unknown contradicting evidence")
-        claim.verification_status = VerificationStatus.PARTIALLY_VERIFIED
+        claim.verification_status = (
+            VerificationStatus.UNVERIFIED
+            if claim.claim_type == ClaimType.HYPOTHESIS
+            else VerificationStatus.PARTIALLY_VERIFIED
+        )
         claim.reviewer_status = "SEMANTIC_REVIEW_REQUIRED"
         output.append(claim)
     return output

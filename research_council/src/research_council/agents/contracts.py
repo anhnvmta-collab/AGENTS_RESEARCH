@@ -7,6 +7,7 @@ from pydantic import Field
 from research_council.schemas.models import (
     CitationAudit,
     Evidence,
+    EvidenceConflict,
     ExperimentPlan,
     Gap,
     HardwareAssessment,
@@ -16,6 +17,7 @@ from research_council.schemas.models import (
     NoveltyDecision,
     Paper,
     PaperCandidate,
+    PaperChunk,
     PaperScore,
     PriorArtReport,
     QualityGateResult,
@@ -80,6 +82,7 @@ class ScoresOutput(Schema):
 
 class ReadingInput(AgentInput):
     paper: Paper
+    chunks: list[PaperChunk] = Field(default_factory=list)
 
 
 class Extraction(Schema):
@@ -99,6 +102,7 @@ class AnalysisInput(QuestionInput):
     papers: list[Paper] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
     claims: list[ResearchClaim] = Field(default_factory=list)
+    conflicts: list[EvidenceConflict] = Field(default_factory=list)
 
 
 class MathOutput(Schema):
@@ -170,6 +174,7 @@ class AuditInput(AgentInput):
     papers: list[Paper]
     claims: list[ResearchClaim]
     evidence: list[Evidence]
+    conflicts: list[EvidenceConflict] = Field(default_factory=list)
 
 
 class AuditsOutput(Schema):
