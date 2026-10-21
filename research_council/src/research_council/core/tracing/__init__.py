@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol
 
@@ -14,6 +15,14 @@ class TraceEvent(Schema):
     status: str
     latency: float | None = None
     error_type: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    start: datetime | None = None
+    end: datetime | None = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    estimated_cost: float | None = None
+    retry: int = 0
 
 
 class TraceSink(Protocol):
@@ -22,7 +31,7 @@ class TraceSink(Protocol):
 
 class ConsoleTraceSink:
     def emit(self, event: TraceEvent) -> None:
-        print(json.dumps({"time": utcnow().isoformat(), **event.model_dump()}))
+        print(json.dumps({"time": utcnow().isoformat(), **event.model_dump(mode="json")}))
 
 
 class JSONLTraceSink:
@@ -32,4 +41,6 @@ class JSONLTraceSink:
 
     def emit(self, event: TraceEvent) -> None:
         with self.path.open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps({"time": utcnow().isoformat(), **event.model_dump()}) + "\n")
+            stream.write(
+                json.dumps({"time": utcnow().isoformat(), **event.model_dump(mode="json")}) + "\n"
+            )

@@ -6,7 +6,8 @@ persist raw HTTP requests or response bodies in failure traces. Pricing and mode
 
 Documents, metadata, abstracts and model outputs are untrusted data. Prompts explicitly prohibit
 following source instructions. Source text is bounded and wrapped as data. Registry allowlists
-apply to all tool invocations; model tool calls need explicit dispatch through the same registry.
+apply to all tool invocations; unexpected model tool calls are rejected. Deterministic agent code
+invokes only typed tools from its allowlist.
 No shell or unrestricted browser tools are exposed to agents.
 
 Resolve file paths against the configured workspace and reject absolute/path traversal and
@@ -16,7 +17,7 @@ inside the workspace; CSV cells beginning with spreadsheet formula characters ar
 
 Network adapters use fixed HTTPS origins, no arbitrary full-text URL fetch or unrestricted
 redirects. Metadata URL presence is not retrieval proof. API and search adapters are opt-in.
-No IEEE scraping; IEEE discovery uses compliant indexed metadata search.
+No IEEE scraping; the optional IEEE boundary requires an injected authenticated backend.
 
 SQLite is a single-user local store. Production multi-user deployment needs authentication,
 authorization, encryption/backups, retention rules and infrastructure hardening outside this CLI.

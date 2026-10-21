@@ -6,10 +6,12 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
+from research_council.core.gates import publication_gate
+from research_council.core.integrity import validate_graph
 from research_council.core.orchestration.state import WorkflowState
 from research_council.core.security import csv_safe, workspace_path
 from research_council.repositories.store import SQLRepository
-from research_council.schemas.models import ModelExecution, ResearchRun, utcnow
+from research_council.schemas.models import Mode, ModelExecution, ResearchRun, utcnow
 
 
 class Exporter(Protocol):
@@ -25,7 +27,8 @@ class MarkdownExporter:
         self.workspace, self.repository = workspace, repository
 
     def export(self, run: ResearchRun, state: WorkflowState) -> Path:
-        target = workspace_path(self.workspace, f"runs/{run.run_id}/exports")
+        validate_graph(state)
+        target = workspace_path(self.workspace, f"outputs/{run.run_id}")
         target.mkdir(parents=True, exist_ok=True)
 
         def write(name: str, text: str) -> None:
@@ -52,6 +55,7 @@ class MarkdownExporter:
             else ""
         )
         json_file("research_plan.json", state.plan.model_dump(mode="json"))
+        json_file("search_queries.json", [item.model_dump(mode="json") for item in state.queries])
         paper_rows = [
             {
                 "paper_id": item.paper.paper_id,
@@ -89,6 +93,11 @@ class MarkdownExporter:
             ],
         )
         json_file("literature_matrix.json", [row.model_dump(mode="json") for row in state.matrix])
+        csv_file(
+            "core_papers.csv",
+            [row for row in paper_rows if row["paper_id"] in state.core_paper_ids],
+            ["paper_id", "title", "authors", "year", "doi", "url", "score", "provenance"],
+        )
         fields = sorted({key for row in state.matrix for key in row.fields})
         csv_file(
             "literature_matrix.csv",
@@ -103,6 +112,21 @@ class MarkdownExporter:
             ["paper_id", "evidence_ids", *fields],
         )
         write("evidence.jsonl", "".join(item.model_dump_json() + "\n" for item in state.evidence))
+        write("claims.jsonl", "".join(item.model_dump_json() + "\n" for item in state.claims))
+        write(
+            "reviewer_report.md",
+            notice
+            + "# Independent reviewer reports\n\n```json\n"
+            + json.dumps([item.model_dump(mode="json") for item in state.reviews], indent=2)
+            + "\n```\n",
+        )
+        write(
+            "novelty_decisions.md",
+            notice
+            + "# Novelty decisions by revision\n\n```json\n"
+            + json.dumps([item.model_dump(mode="json") for item in state.decisions], indent=2)
+            + "\n```\n",
+        )
         write(
             "research_gaps.md",
             notice
@@ -204,7 +228,11 @@ class MarkdownExporter:
             notice,
             f"Run: {run.run_id} | Mode: {run.mode} | Status: {run.status} | Provenance: {run.provenance}",
         ]
-        publication = any(gate.gate == 3 and gate.passed for gate in state.gates)
+        publication = publication_gate(
+            state,
+            self.repository.list_model_executions(run.run_id),
+            require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
+        ).passed
         report += [
             "## Publication readiness",
             "PASSED" if publication else "NOT ESTABLISHED",
@@ -252,6 +280,18 @@ class MarkdownExporter:
                 "config_fingerprint": run.config_fingerprint,
                 "publication_ready": publication,
                 "novelty_iterations": state.novelty_iteration,
+                "search_saturation": [item.model_dump(mode="json") for item in state.saturation],
+                "evidence_conflicts": [item.model_dump(mode="json") for item in state.conflicts],
+                "targeted_search_requests": [
+                    item.model_dump(mode="json") for item in state.targeted_requests
+                ],
+                "knowledge_map": state.knowledge_map.model_dump(mode="json")
+                if state.knowledge_map
+                else None,
+                "workflow_events": [item.model_dump(mode="json") for item in state.events],
+                "source_chunks": [
+                    item.model_dump(mode="json", exclude={"text"}) for item in state.chunks
+                ],
                 "model_calls": len(executions),
                 "search_attempts": [
                     attempt.model_dump(mode="json") for attempt in state.search_history

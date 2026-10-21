@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from research_council.core.orchestration.state import WorkflowState
+
+from typing import TYPE_CHECKING
+
 from research_council.core.grounding import grounded_excerpt
 from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.schemas.models import (
@@ -261,3 +266,85 @@ class PublicationReadinessGate:
             reasons=list(dict.fromkeys(reasons)),
             checked_ids=[claim.claim_id for claim in primary],
         )
+
+
+def surviving_candidates(
+    state: WorkflowState, executions: list[ModelExecution], minimum_evidence: int = 2
+) -> list[NoveltyCandidate]:
+    latest = {
+        item.candidate_id: max(
+            other.revision
+            for other in state.novelty_candidates
+            if other.candidate_id == item.candidate_id
+        )
+        for item in state.novelty_candidates
+    }
+    result = []
+    for candidate in state.novelty_candidates:
+        if candidate.revision != latest[candidate.candidate_id]:
+            continue
+
+        def matching(items: list, candidate: NoveltyCandidate = candidate) -> object:
+            return next(
+                (
+                    item
+                    for item in reversed(items)
+                    if item.candidate_id == candidate.candidate_id
+                    and item.revision == candidate.revision
+                ),
+                None,
+            )
+
+        prior, review, decision = (
+            matching(state.prior_art),
+            matching(state.reviews),
+            matching(state.decisions),
+        )
+        if (
+            isinstance(prior, PriorArtReport)
+            and isinstance(review, ReviewerReport)
+            and isinstance(decision, NoveltyDecision)
+        ):
+            if (
+                NoveltySurvivalGate(minimum_evidence)
+                .evaluate(
+                    candidate,
+                    state.evidence,
+                    prior,
+                    review,
+                    decision,
+                    [item.paper for item in state.candidates],
+                    executions,
+                    state.conflicts,
+                )
+                .passed
+            ):
+                result.append(candidate)
+    return result
+
+
+def publication_gate(
+    state: WorkflowState,
+    executions: list[ModelExecution],
+    *,
+    require_novelty: bool = False,
+    minimum_evidence: int = 2,
+) -> QualityGateResult:
+    survivors = surviving_candidates(state, executions, minimum_evidence)
+    result = PublicationReadinessGate().evaluate(
+        [item.paper for item in state.candidates],
+        state.claims,
+        state.evidence,
+        state.audits,
+        state.experiments,
+        state.limitations,
+        state.conflicts,
+        state.outline,
+        survivors,
+    )
+    if require_novelty and not survivors:
+        result.passed = False
+        result.reasons.append(
+            "No current contribution revision survives independent novelty checks."
+        )
+    return result

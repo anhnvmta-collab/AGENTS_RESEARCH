@@ -9,6 +9,7 @@ from uuid import UUID
 from pydantic import ValidationError
 
 from research_council.core.config import Route, Settings
+from research_council.core.tracing import TraceEvent, TraceSink
 from research_council.providers.base import BaseLLMProvider, LLMRequest, LLMResponse, ProviderError
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import ModelExecution, Schema, TaskProfile, utcnow
@@ -27,11 +28,13 @@ class ModelRouter:
         providers: dict[str, BaseLLMProvider],
         repository: SQLRepository,
         run_id: UUID,
+        trace: TraceSink | None = None,
     ) -> None:
         self.settings = settings
         self.providers = providers
         self.repository = repository
         self.run_id = run_id
+        self.trace = trace
         prior = repository.list_all("model_executions", ModelExecution, run_id)
         self.calls = len(prior)
         self.cost = sum(item.estimated_cost or 0 for item in prior)
@@ -183,6 +186,25 @@ class ModelRouter:
                     self.repository.save(
                         "model_executions", execution.execution_id, execution, self.run_id
                     )
+                    if self.trace:
+                        self.trace.emit(
+                            TraceEvent(
+                                run_id=str(self.run_id),
+                                agent_id=role,
+                                event="model_end",
+                                status=execution.status,
+                                provider=execution.provider,
+                                model=execution.model,
+                                start=execution.start_time,
+                                end=execution.end_time,
+                                latency=execution.latency,
+                                input_tokens=execution.input_tokens,
+                                output_tokens=execution.output_tokens,
+                                estimated_cost=execution.estimated_cost,
+                                retry=execution.retry_count,
+                                error_type=execution.error_type,
+                            )
+                        )
                 if result is not None:
                     self.last_success[role] = execution
                     return result

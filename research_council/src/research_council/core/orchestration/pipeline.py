@@ -29,7 +29,8 @@ from research_council.agents.contracts import (
 )
 from research_council.core.config import Settings
 from research_council.core.context import independent_review
-from research_council.core.gates import PublicationReadinessGate, SourceIntegrityGate
+from research_council.core.gates import SourceIntegrityGate, publication_gate, surviving_candidates
+from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.core.orchestration.engine import (
     Concurrency,
     Stage,
@@ -482,29 +483,11 @@ class ResearchPipeline:
         ).run(state, checkpoint)
 
     async def experiments(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
-        passed = {
-            (gate.candidate_id, gate.candidate_revision)
-            for gate in state.gates
-            if gate.gate == 2 and gate.passed
-        }
-        latest = {
-            identity: max(
-                item.revision for item in state.novelty_candidates if item.candidate_id == identity
-            )
-            for identity in {item.candidate_id for item in state.novelty_candidates}
-        }
-        survivors = [
-            item
-            for item in state.novelty_candidates
-            if (item.candidate_id, item.revision) in passed
-            and item.revision == latest[item.candidate_id]
-            and any(
-                decision.candidate_id == item.candidate_id
-                and decision.revision == item.revision
-                and decision.verdict == "SURVIVE"
-                for decision in state.decisions
-            )
-        ]
+        survivors = surviving_candidates(
+            state,
+            self.repository.list_model_executions(run.run_id),
+            self.settings.research.min_novelty_evidence,
+        )
         if run.mode == Mode.NOVELTY and not survivors:
             state.limitations.append(
                 "Experiment/paper design awaits a contribution that survives Gate 2."
@@ -558,35 +541,32 @@ class ResearchPipeline:
             self.call(agents.CitationAuditor, value), AuditsOutput(), state, "CitationAuditor"
         )
         state.audits.extend(AuditsOutput.model_validate(result).audits)
+        invalid = set()
+        for claim in state.claims:
+            if unresolved_conflict(claim, state.conflicts) or any(
+                citation_conflict_open(audit, claim, state.conflicts)
+                and (claim.claim_id in audit.claim_ids or audit.paper_id in claim.source_paper_ids)
+                for audit in state.audits
+            ):
+                claim.verification_status = VerificationStatus.CONTRADICTED
+                invalid.add(claim.claim_id)
+        if invalid.intersection(state.synthesis.claim_ids):
+            state.synthesis.claim_ids = [
+                identity for identity in state.synthesis.claim_ids if identity not in invalid
+            ]
+            state.synthesis.summary = (
+                "Scientific conclusions require renewed review after citation/evidence conflicts."
+            )
         state.limitations.append(
             "Automatic quotation/metadata checks do not replace scientific entailment review."
         )
-        gate = PublicationReadinessGate().evaluate(
-            value.papers,
-            state.claims,
-            state.evidence,
-            state.audits,
-            state.experiments,
-            state.limitations,
-            conflicts=state.conflicts,
-            outline=state.outline,
-            novelty_candidates=[
-                item
-                for item in state.novelty_candidates
-                if any(
-                    decision.candidate_id == item.candidate_id
-                    and decision.revision == item.revision
-                    and decision.verdict == "SURVIVE"
-                    for decision in state.decisions
-                )
-            ],
+        gate = publication_gate(
+            state,
+            self.repository.list_model_executions(run.run_id),
+            require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
+            minimum_evidence=self.settings.research.min_novelty_evidence,
         )
-        if run.mode in (Mode.NOVELTY, Mode.AUDIT) and not any(
-            item.gate == 2 and item.passed for item in state.gates
-        ):
-            gate.passed = False
-            gate.reasons.append("No contribution survived the independent novelty gate.")
-        state.gates.append(gate)
+        state.gates = [item for item in state.gates if item.gate != 3] + [gate]
         return state
 
     async def synthesis(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:

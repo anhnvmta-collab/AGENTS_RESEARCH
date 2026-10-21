@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -22,7 +23,7 @@ async def test_offline_end_to_end(tmp_path, mode):
     target = MarkdownExporter(tmp_path, repo).export(result, state)
     manifest = json.loads((target / "run_manifest.json").read_text())
     assert not manifest["publication_ready"]
-    assert len(manifest["files"]) == 13
+    assert len(manifest["files"]) == 18
     repo.engine.dispose()
 
 
@@ -54,4 +55,23 @@ async def test_fixture_end_to_end_and_resume(tmp_path):
     assert str(state.evidence[0].evidence_id) in report
     assert "NOT ESTABLISHED" in report
     assert not json.loads((target / "run_manifest.json").read_text())["publication_ready"]
+    manifest = json.loads((target / "run_manifest.json").read_text())
+    assert len(list(target.iterdir())) == 19
+    assert all(
+        hashlib.sha256((target / name).read_bytes()).hexdigest() == digest
+        for name, digest in manifest["files"].items()
+    )
+    traces = [
+        json.loads(line)
+        for line in (tmp_path / "runs" / str(run.run_id) / "trace.jsonl").read_text().splitlines()
+    ]
+    model_traces = [item for item in traces if item["event"] == "model_end"]
+    assert model_traces and all(
+        item["provider"] == "fake"
+        and item["model"]
+        and item["start"] <= item["end"]
+        and item["estimated_cost"] == 0
+        for item in model_traces
+    )
+    assert sum(item["input_tokens"] for item in model_traces) == manifest["input_tokens"]
     repo.engine.dispose()

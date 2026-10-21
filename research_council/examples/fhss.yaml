@@ -6,6 +6,8 @@ question:
     - Coherent multi-channel receiver
     - Real-time processing
     - SDR/FPGA implementation
+    - FPGA / RFSoC / Zynq-class platform
+    - Cross-channel coherence and sparse recovery
     - Compressed Sensing
     - DOA estimation
 goal: Identify defensible gaps and candidate contributions for peer-reviewed engineering research.

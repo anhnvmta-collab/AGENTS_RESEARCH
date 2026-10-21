@@ -101,6 +101,8 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
                         event="agent_end",
                         status=execution.status,
                         latency=execution.latency,
+                        start=execution.start_time,
+                        end=execution.end_time,
                         error_type=execution.error_type,
                     )
                 )

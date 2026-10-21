@@ -132,7 +132,13 @@ class WorkflowEvent(Schema):
     run_id: UUID
     stage: str
     event: Literal[
-        "RESUMED", "STAGE_STARTED", "STAGE_COMPLETED", "STAGE_FAILED", "PAUSED", "COMPLETED"
+        "RESUMED",
+        "STAGE_STARTED",
+        "STAGE_COMPLETED",
+        "STAGE_FAILED",
+        "PAUSED",
+        "COMPLETED",
+        "AUDIT_COMPLETED",
     ]
     created_at: datetime = Field(default_factory=utcnow)
 

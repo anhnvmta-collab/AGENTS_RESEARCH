@@ -30,13 +30,23 @@ def test_cli_lifecycle(tmp_path):
     repo = open_repository(tmp_path)
     run = repo.list_all("research_runs", ResearchRun)[0]
     repo.engine.dispose()
-    for command in ("status", "resume", "export", "evaluate"):
+    for command in ("status", "resume", "audit", "export", "evaluate"):
         output = runner.invoke(app, [command, str(run.run_id), "--workspace", workspace])
         assert output.exit_code == 0, output.output
-    manifest = next((tmp_path / "runs").glob("*/exports/run_manifest.json"))
+    repo = open_repository(tmp_path)
+    state = repo.artifacts(run.run_id)["state"]
+    assert state["events"][-1]["event"] == "AUDIT_COMPLETED"
+    assert len(state["audits"]) == 4  # Initial and repeated audits retained.
+    repo.engine.dispose()
+    manifest = next((tmp_path / "outputs").glob("*/run_manifest.json"))
     assert not json.loads(manifest.read_text())["publication_ready"]
     benchmark = runner.invoke(app, ["models", "benchmark", "--workspace", workspace])
     assert benchmark.exit_code == 0, benchmark.output
+    prepared = runner.invoke(app, ["benchmark", "prepare", "--workspace", workspace])
+    assert prepared.exit_code == 0, prepared.output
+    payload = json.loads((tmp_path / "benchmarks/fhss/preparation.json").read_text())
+    assert payload["status"] == "BENCHMARK_READY_BUT_NOT_EXECUTED"
+    assert not payload["findings"] and not payload["measured_results"]
 
 
 def test_cli_human_approval_flow(tmp_path):

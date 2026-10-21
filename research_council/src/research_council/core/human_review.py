@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
-from research_council.core.gates import PublicationReadinessGate
+from research_council.core.gates import publication_gate
 from research_council.core.integrity import citation_conflict_open, unresolved_conflict
 from research_council.core.orchestration.engine import RunLease
 from research_council.core.orchestration.state import WorkflowState
@@ -78,31 +78,11 @@ def attest_claim(
                 )
             )
         state.gates = [item for item in state.gates if item.gate != 3]
-        gate = PublicationReadinessGate().evaluate(
-            list(papers.values()),
-            state.claims,
-            state.evidence,
-            state.audits,
-            state.experiments,
-            state.limitations,
-            conflicts=state.conflicts,
-            outline=state.outline,
-            novelty_candidates=[
-                item
-                for item in state.novelty_candidates
-                if any(
-                    decision.candidate_id == item.candidate_id
-                    and decision.revision == item.revision
-                    and decision.verdict == "SURVIVE"
-                    for decision in state.decisions
-                )
-            ],
+        gate = publication_gate(
+            state,
+            repository.list_model_executions(run_id),
+            require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
         )
-        if run.mode in (Mode.NOVELTY, Mode.AUDIT) and not any(
-            item.gate == 2 and item.passed for item in state.gates
-        ):
-            gate.passed = False
-            gate.reasons.append("Novelty survival is still required.")
         state.gates.append(gate)
         repository.save("approvals", uuid4(), attestation, run_id)
         repository.checkpoint(run, {"state": state})

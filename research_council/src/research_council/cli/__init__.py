@@ -26,6 +26,8 @@ app = typer.Typer(
 )
 models_app = typer.Typer(no_args_is_help=True)
 app.add_typer(models_app, name="models")
+benchmark_app = typer.Typer(no_args_is_help=True)
+app.add_typer(benchmark_app, name="benchmark")
 console = Console()
 WorkspaceOption = Annotated[Path, typer.Option("--workspace", "-w", help="Project data workspace.")]
 
@@ -328,3 +330,89 @@ def evaluate_command(
         console.print_json(result.model_dump_json())
     finally:
         repo.engine.dispose()
+
+
+@app.command()
+def audit(run_id: str, workspace: WorkspaceOption = Path("workspace")) -> None:
+    """Recheck stored evidence/citations and gates without generating model conclusions."""
+    from research_council.core.integrity import validate_graph
+    from research_council.core.orchestration.engine import RunLease
+    from research_council.schemas.models import WorkflowEvent
+
+    load_dotenv()
+    repo = open_repository(workspace)
+    identity = checked_uuid(run_id)
+    lease = RunLease(repo, identity)
+    try:
+        lease.acquire()
+        record = repo.get_run(identity)
+        state = WorkflowState.model_validate(repo.artifacts(identity).get("state", {}))
+        validate_graph(state)
+
+        async def work() -> None:
+            async with Runtime(
+                workspace, repo, settings_for_run(repo, identity), record
+            ) as pipeline:
+                await pipeline.audit(record, state)
+
+        asyncio.run(work())
+        state.events.append(
+            WorkflowEvent(
+                run_id=identity,
+                stage="citation_audit",
+                event="AUDIT_COMPLETED",
+            )
+        )
+        repo.checkpoint(record, {"state": state})
+        target = MarkdownExporter(workspace, repo).export(record, state)
+        console.print(
+            f"Audit complete; Gate 3: {'PASS' if state.gates[-1].passed else 'FAIL'}; Reports: {target}"
+        )
+    finally:
+        lease.release()
+        repo.engine.dispose()
+
+
+@app.command(name="resolve-conflict")
+def resolve_conflict_command(
+    run_id: str,
+    resolution: Annotated[str, typer.Option(help="Workspace-relative JSON review file.")],
+    workspace: WorkspaceOption = Path("workspace"),
+) -> None:
+    """Record named human conflict resolution while preserving all evidence."""
+    from research_council.core.conflict_review import (
+        ConflictResolutionRequest,
+        resolve_evidence_conflict,
+    )
+    from research_council.core.security import workspace_path
+
+    repo = open_repository(workspace)
+    try:
+        path = workspace_path(workspace, resolution)
+        if path.stat().st_size > 10_000:
+            raise typer.BadParameter("Resolution file is too large")
+        request = ConflictResolutionRequest.model_validate_json(path.read_text(encoding="utf-8"))
+        resolve_evidence_conflict(repo, checked_uuid(run_id), request)
+        console.print(
+            "Conflict review recorded; scientific verification remains a separate review."
+        )
+    finally:
+        repo.engine.dispose()
+
+
+@benchmark_app.command(name="prepare")
+def benchmark_prepare(
+    workspace: WorkspaceOption = Path("workspace"),
+    project: Annotated[Path | None, typer.Option(help="Optional project YAML.")] = None,
+) -> None:
+    """Prepare the FHSS benchmark without inventing or executing research."""
+    from research_council.core.benchmark import prepare_benchmark
+
+    question = (
+        ResearchQuestion.model_validate(
+            yaml.safe_load(project.read_text(encoding="utf-8"))["question"]
+        )
+        if project
+        else None
+    )
+    console.print(f"BENCHMARK_READY_BUT_NOT_EXECUTED: {prepare_benchmark(workspace, question)}")

@@ -160,6 +160,7 @@ class Runtime:
         trace = JSONLTraceSink(
             workspace_path(self.workspace, f"runs/{self.run.run_id}/trace.jsonl")
         )
+        router.trace = trace
         tools = ToolRegistry()
         pipeline = ResearchPipeline(self.repository, settings, router, tools, trace)
         discovery = DiscoveryService(
