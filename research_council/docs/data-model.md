@@ -22,3 +22,14 @@ author/year and conservative fuzzy matching. Conflicting DOIs never merge throug
 
 Knowledge maps are recursive JSON nodes containing topic/subtopics and paper/claim/gap IDs,
 with explicit coverage scores. Vector retrieval is optional and is never a source of truth.
+
+## Audited graph and retrieval records
+Alembic 0002 adds scientific_artifacts with unique (run, type, artifact UUID, revision) identities
+and scientific_links with composite foreign keys enforcing same-run membership. Checkpoints
+validate the whole PAPER -> EVIDENCE -> CLAIM -> GAP -> NOVELTY -> PRIOR ART -> REVIEW ->
+DECISION -> EXPERIMENT -> PAPER PLAN graph in one transaction, including dictionary inputs.
+PaperChunk stores source SHA256, page, exact offsets and bounded text; Evidence links its chunk.
+TargetedSearchRequest links the attacked candidate revision and retains pending/completed/skipped
+status. EvidenceConflict preserves support, contradiction, severity, resolution, named reviewer and
+note. Resolving a conflict does not verify science. Quartile requires journal/year/category/source.
+Knowledge-map coverage is the fraction of observed member papers with evidence, not global coverage.

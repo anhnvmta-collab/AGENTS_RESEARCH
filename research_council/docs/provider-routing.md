@@ -10,6 +10,14 @@ operator supplied (CONFIGURE_ME is rejected). Profiles: SEARCH_PLANNING, PAPER_E
 MATH_REASONING, HARDWARE_REASONING, SYNTHESIS, NOVELTY_GENERATION, ADVERSARIAL_REVIEW,
 CITATION_VERIFICATION. Deterministic fallback never silently changes live data to fixture data.
 
+Role overrides are supported through `role_routes` or role aliases under `models` (for example
+`director`, `deep_reader`, `reviewer_two`). `${OPENAI_DIRECTOR_MODEL}`-style variables may
+expand model IDs; API key expansion into configuration is rejected. Configure prices explicitly.
+NoveltyGenerator records the actual provider/execution. ReviewerTwo prefers a configured
+different actual provider; single-provider fallback is recorded as SAME_PROVIDER_FALLBACK.
+PriorArtHunter and ReviewerTwo receive only normalized claim, keywords and minimal evidence;
+generator interpretations, confidence, rationale and private reasoning are excluded.
+
 Retries cover transient timeouts, 429/5xx and invalid structured output. Backoff is bounded,
 exponential with jitter and respects Retry-After. Authentication and bad configuration fail fast.
 Each attempt persists valid-output status, usage when returned, latency, retry number and error

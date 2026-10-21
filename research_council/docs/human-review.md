@@ -33,3 +33,23 @@ cannot authorize unrelated claims. Novelty runs still require Gate 2.
 
 This is a local trusted-user interface, not an authenticated multi-user review service. It
 records the reviewer's attestation; it cannot establish that a person actually read a source.
+
+## Evidence conflict review
+
+While a run is paused, inspect both supporting and contradicting quotations. Create a
+workspace-relative `resolution.json` containing:
+
+```json
+{
+  "conflict_id": "REPLACE_WITH_CONFLICT_UUID",
+  "reviewer": "Reviewer's name",
+  "note": "Explain the opposing evidence, scope and documented resolution.",
+  "resolution_status": "RESOLVED"
+}
+```
+
+Run `research-council resolve-conflict RUN_ID --resolution resolution.json` with the same
+workspace. `UNRESOLVED` can also be recorded. This action keeps all evidence, resets the
+claim to UNVERIFIED and never supplies scientific entailment. A separate attestation is
+required at the final pause. Contradicted source identity/location/retraction audits cannot
+be cleared through this evidence-only resolution mechanism.

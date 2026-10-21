@@ -1,4 +1,4 @@
-﻿{
+{
     "environment":  ".acceptance-env",
     "system_site_packages":  false,
     "initial_install_exit_code":  0,

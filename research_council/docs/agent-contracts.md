@@ -1,9 +1,10 @@
 # Agent contracts
 
 Every BaseResearchAgent declares name, role, allowed_tools, task_profile, max_retries,
-timeout and provider_policy, and implements validate_input, run and validate_output. Typed
+timeout and provider_policy, and implements validate_input, build_context, run and validate_output. Typed
 inputs contain task, only relevant state, evidence and minimal summaries. Every role has its
-own external prompt. Tool registry checks permissions at invocation, including model tool calls.
+own external prompt. Tool registry checks permissions at deterministic invocation. Unexpected
+model tool calls are rejected before they can dispatch any tool.
 
 | Agent | Input → output | Tools |
 |---|---|---|
@@ -15,12 +16,12 @@ own external prompt. Tool registry checks permissions at invocation, including m
 | CitationScout | seed papers/direction → candidates | citation search |
 | LocalDocumentScout | local paths → candidates | local read |
 | PaperTriage | candidates → component scores | none |
-| DeepReader | retrieved source → located extractions/evidence/claims | paper read |
+| DeepReader | ranked located chunks → extractions/evidence/claims | paper read |
 | MathDSPAnalyst | evidence → supported analysis/explicit derivations | evidence read |
 | HardwareArchitect | evidence/constraints → traffic-light assessment | evidence read |
 | GapMiner | matrix/evidence → gaps | evidence/matrix read |
 | NoveltyGenerator | gaps → testable candidates | evidence/matrix read |
-| PriorArtHunter | normalized claim/keywords/minimal evidence → ranked matches | search/evidence read |
+| PriorArtHunter | normalized claim/keywords/minimal evidence → ranked overlap matrix | search/citation search/evidence read |
 | ReviewerTwo | normalized claim/keywords/minimal evidence → skeptical review | evidence read |
 | NoveltyJudge | candidate/reports/evidence → decision | evidence read |
 | ExperimentDesigner | gaps/approved candidates → baselines/metrics/experiments | evidence read |

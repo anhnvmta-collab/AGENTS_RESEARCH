@@ -4,10 +4,11 @@ Evidence-first scientific research workflows for RF, DSP, SDR, FPGA, RFSoC and e
 domains. A deterministic asyncio workflow owns execution; 20 isolated agent roles perform
 bounded tasks through typed contracts. Scientific claims must resolve to source evidence.
 
-The local V1 implementation covers phases 0–10. Validation: **58 offline tests pass**, Ruff
+The local V1 implementation covers phases 0–10 after an independent engineering audit. Validation: **113 offline tests pass**, Ruff
 format/lint and mypy pass, dependencies pass `pip check`, and an installed wheel runs a full
 synthetic workflow with packaged prompts/migrations. Paid provider endpoints and PostgreSQL
-have not been exercised live. See [validation.md](docs/validation.md) and [phase reports](docs/phases).
+have not been exercised live. See the [final implementation audit](docs/FINAL_IMPLEMENTATION_AUDIT.md),
+[acceptance evidence](docs/audits/acceptance-results.json) and [phase reports](docs/phases).
 
 ## Install and run
 
@@ -30,10 +31,10 @@ no literature findings. To exercise the entire graph with unmistakably synthetic
 The requested FHSS project is prepared in [examples/fhss.yaml](examples/fhss.yaml):
 
 ```powershell
-.venv\Scripts\research-council run --project examples/fhss.yaml --mode novelty
+.venv\Scripts\research-council benchmark prepare --project examples/fhss.yaml
 ```
 
-This system test produces no real research results until real search and model adapters are
+Preparation records **BENCHMARK_READY_BUT_NOT_EXECUTED** with no findings. The benchmark produces no real research results until real search and model adapters are
 explicitly enabled. Synthetic records cannot pass novelty survival or publication readiness.
 
 ## Enable real research
@@ -54,8 +55,9 @@ and prices, and at least one enabled provider key. Failed calls retry/fallback w
 findings. Missing token usage/timeouts consume a recorded conservative budget reservation.
 Budget estimates cover model calls; search-service billing and quotas remain separate.
 
-Search adapters: Crossref and OpenAlex, plus workspace-contained local PDF/TXT/Markdown.
-IEEE discovery uses compliant indexed metadata queries, with no restricted-site scraping.
+Search adapters: Crossref, OpenAlex and arXiv, plus workspace-contained local PDF/TXT/Markdown.
+IEEE has an optional authenticated-backend boundary, with no restricted-site scraping.
+Semantic Scholar remains an extension rather than an implemented connector.
 Citation exploration supports backward, forward (OpenAlex), author and related chains. Abstract
 retrieval only supports abstract-level extraction. Full text can be provided locally; no paywall
 bypass, arbitrary URL downloading or OCR is included.
@@ -84,6 +86,7 @@ as publication years. Missing quartile/retraction data remains unknown.
 .venv\Scripts\research-council status RUN_ID
 .venv\Scripts\research-council resume RUN_ID
 .venv\Scripts\research-council export RUN_ID
+.venv\Scripts\research-council audit RUN_ID
 .venv\Scripts\research-council models benchmark
 .venv\Scripts\research-council evaluate RUN_ID
 ```
@@ -91,7 +94,8 @@ as publication years. Missing quartile/retraction data remains unknown.
 Runs pin their configuration and workflow version. Resume continues from checkpoints;
 completed stages are not repeated. A run lease prevents concurrent writers. One failed scout
 does not kill successful branches. Novelty iterations default to three; unresolved proposals
-finish as `UNRESOLVED`, while the run can complete its limited report.
+finish as `UNRESOLVED`, while the run can complete its limited report. Repeated completed searches
+with negligible new information stop with `SEARCH_SATURATED`; adapter failures cannot establish saturation.
 
 Set `research.human_approval_required: true` to pause after the plan, before expensive DEEP
 work, after gaps, before accepting novelty, and before the final report. Use `approve`, `reject`,
@@ -103,28 +107,35 @@ JSON file and `attest-claim RUN_ID --attestation review.json`. The reviewer must
 confirm identity, locations, entailment and retraction checks; see
 [human-review.md](docs/human-review.md). Fixture, hypothesis and unresolved contradictory claims
 cannot be promoted. Gate 3 is recalculated using claim-specific human audits.
+Contradictions persist in `EvidenceConflict` records. `resolve-conflict RUN_ID --resolution review.json`
+records named, documented human resolution while paused, preserving all opposing evidence.
+Resolution itself does not verify the claim. Source identity conflicts continue to block attestation.
 
 ## Outputs and observability
 
-Each run exports to `workspace/runs/RUN_ID/exports/`:
+Each run exports 19 files to `workspace/outputs/RUN_ID/`:
 
 ```text
-research_plan.json       paper_candidates.csv      literature_matrix.csv
-literature_matrix.json  evidence.jsonl             research_gaps.md
-novelty_candidates.md   prior_art_report.md        hardware_feasibility.md
-experiment_plan.md      ieee_paper_plan.md         citation_audit.csv
-final_report.md         run_manifest.json
+research_plan.json      search_queries.json        paper_candidates.csv
+core_papers.csv         literature_matrix.csv      literature_matrix.json
+evidence.jsonl          claims.jsonl               research_gaps.md
+novelty_candidates.md   prior_art_report.md        reviewer_report.md
+novelty_decisions.md    hardware_feasibility.md    experiment_plan.md
+ieee_paper_plan.md      citation_audit.csv         final_report.md
+run_manifest.json
 ```
 
 The final report preserves claim/evidence/paper IDs, DOI/URL, locations and verification
-status. Manifest hashes cover all 13 other artifacts; it also records queries/search attempts,
-gates, token usage, estimated model cost and iteration count. `trace.jsonl` records structured
-stage/agent events. Database tables retain per-attempt model metrics and agent executions.
+status. Manifest hashes cover all 18 other artifacts; it also records search attempts, saturation,
+conflicts, observed knowledge map, chunk hashes, gates, usage, cost and iteration count.
+`workspace/runs/RUN_ID/trace.jsonl` records workflow/agent events and every model attempt's
+provider, model, start/end, latency, tokens, cost, retry and status. Database tables retain executions.
 No shared transcript, vector service, graph database or orchestration framework is required.
 
 Gate 1 checks paper identity, deduplication and retrieved text. Gate 2 checks actual completed
 prior-art search, independent review, matching revisions and grounded evidence. Gate 3 requires
-verified primary claims, claim-specific scientific audits, baselines, metrics, experiments and
+verified primary claims, claim-specific scientific audits, hypothesis, baselines, metrics, ablation,
+statistics, failure cases, acceptance criteria, reproducibility, linked experiments/paper plan and
 limitations. Automatic metadata/quotation matching establishes partial verification only.
 
 ## Development and evaluation
@@ -141,9 +152,15 @@ providers, synthetic papers/evidence and HTTPX mock transports; no paid APIs are
 A GitHub Actions matrix is supplied for Python 3.11/3.12 on Linux/Windows, but has not been run
 remotely from this workspace.
 
+To reproduce clean-wheel acceptance, create a new environment, install the wheel with its dev
+extra and run `scripts/acceptance.py` using that interpreter from this directory. The script
+checks the installed package, migrations, four modes, exports and the full offline pytest suite.
+After independently reviewing the final audit, use `scripts/acceptance.py --finalize docs/audits/acceptance-results.json`.
+
 The evaluation harness measures citation precision/completeness, identity accuracy, evidence
 grounding, hallucinated references, structured-output validity, novelty false positives,
-latency and estimated model cost. Independent gold labels and human scores can be supplied
+latency, token usage and estimated model cost. Human fields include technical depth, research
+usefulness, novelty usefulness, hardware realism and publication readiness. Independent labels and scores can be supplied
 with `evaluate --gold labels.json --human scores.json`. Unknown/zero-denominator metrics are
 `null`; missing annotations do not become perfect scores. Model benchmarks assess every
 configured route and preserve the routing configuration.

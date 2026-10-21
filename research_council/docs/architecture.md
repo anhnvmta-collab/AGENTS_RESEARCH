@@ -41,7 +41,7 @@ is shared across asynchronous work. Stage artifact writes and checkpoint advance
 | Costs and rate limits | Per-call caps, run budget, usage persistence, bounded retries and jitter | Provider billing remains authoritative |
 | Malicious documents | Workspace containment, size limits, untrusted data envelope, tool allowlists | Prompt injection cannot be solved by prompts alone |
 
-## Planned tree
+## Repository layout
 
 ```text
 research_council/
@@ -55,10 +55,20 @@ research_council/
     cli/  schemas/  agents/  providers/  repositories/  storage/
     core/{orchestration,routing,gates,context,tracing,security}/
     tools/  knowledge/  evaluation/  exporters/
-  migrations/versions/
+  src/research_council/storage/migrations/versions/
   tests/
   examples/fhss.yaml
-  scripts/check.py
+  scripts/{check,acceptance}.py
 ```
 
 See [implementation-plan.md](implementation-plan.md) for dependencies and phase checks.
+
+## Implemented audit refinements
+Source adapters implement search/metadata/citation/full-text ports. arXiv serializes requests with
+bounded XML parsing; IEEE is an optional authenticated-backend boundary. Located lexical retrieval
+ranks source chunks before DeepReader; quotations retain paper/chunk/hash/location provenance.
+Run/revision graph snapshots and composite foreign keys supplement JSON artifacts. Lease ownership
+is fenced during checkpoint writes, with persisted stage events and configuration fingerprints.
+Role exports load lazily to avoid contract/core import cycles; fresh-process import tests cover the
+public entry points. Outputs reside at workspace/outputs/RUN_ID; JSONL traces remain under runs.
+See ADRs 0004-0007 and FINAL_IMPLEMENTATION_AUDIT.md for verified scope and remaining limits.

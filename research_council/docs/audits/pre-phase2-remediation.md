@@ -38,3 +38,17 @@ safe environment configuration; context retrieval; saturation/query expansion/ad
 hardware labels; complete outputs/trace/CLI/evaluation; clean install and security acceptance.
 No live provider, PostgreSQL or scientific benchmark result is claimed. The foundation is healthy
 enough to continue; remaining integrations cannot bypass the corrected graph/gate policies.
+
+## Final remediation closure
+M02 is covered by configured role routes, safe model environment expansion and actual-provider
+review preference (phase 2). M03 is covered by located lexical retrieval and late-page/source-hash
+regressions (phase 6). M04 is covered by source ports, query expansion, saturation, typed targeted
+requests, retained conflicts, observed maps, measured/estimated hardware labels and evaluation
+fields (phases 5-10). M06 is covered by the 19-file output set, audit CLI, complete attempt traces
+and root CI (phase 9). M07 is covered by a fresh environment dependency/wheel installation,
+fresh-process import tests, migration up/down, negative graph tests and offline A-Z acceptance.
+All CRITICAL/HIGH findings have explicit implemented corrections and passing regressions.
+M01's broader dependency inversion remains incremental: domain repository ports exist, while
+some application services still use the concrete SQLRepository facade. LOW CI action commit
+pinning is deferred; tags are explicit in the root workflow. Historical phase test counts above
+are preserved; final measured scope and limitations are in FINAL_IMPLEMENTATION_AUDIT.md.
