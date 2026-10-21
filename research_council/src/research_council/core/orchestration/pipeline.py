@@ -219,6 +219,12 @@ class ResearchPipeline:
             citations = await asyncio.gather(*citation_tasks, return_exceptions=True)
             for result in citations:
                 if isinstance(result, CandidatesOutput):
+                    if self.settings.science_benchmark:
+                        from research_council.validation.identity import (
+                            retain_identity_observations,
+                        )
+
+                        retain_identity_observations(state.identity_observations, result.candidates)
                     state.candidates.extend(result.candidates)
                     state.warnings.extend(result.failures)
                     state.search_history.extend(result.attempts)
@@ -269,6 +275,8 @@ class ResearchPipeline:
             for item in state.candidates
             if SourceIntegrityGate().evaluate([item.paper]).passed
         ][: self.settings.research.max_core_papers]
+        if self.settings.science_benchmark:
+            await self._science_core(state)
         state.gates.append(
             SourceIntegrityGate().evaluate(
                 [
@@ -330,6 +338,10 @@ class ResearchPipeline:
         )
         for result in results:
             if isinstance(result, CandidatesOutput):
+                if self.settings.science_benchmark:
+                    from research_council.validation.identity import retain_identity_observations
+
+                    retain_identity_observations(state.identity_observations, result.candidates)
                 state.candidates.extend(result.candidates)
                 state.warnings.extend(result.failures)
                 state.search_history.extend(result.attempts)
@@ -344,6 +356,45 @@ class ResearchPipeline:
         state.core_paper_ids = list(dict.fromkeys(state.core_paper_ids + accepted))[
             : self.settings.research.max_core_papers
         ]
+        if self.settings.science_benchmark:
+            await self._science_core(state)
+
+    async def _science_core(self, state: WorkflowState) -> None:
+        from research_council.validation.coverage import vocabulary
+        from research_council.validation.identity import IdentityInput, IdentityOutput
+        from research_council.validation.triage import diverse_shortlist
+
+        value = IdentityInput(
+            papers=[item.paper for item in state.candidates],
+            observations=state.identity_observations,
+        )
+        output = IdentityOutput.model_validate(
+            await self.tools.invoke(
+                "identity_verify", value, allowlist=frozenset({"identity_verify"})
+            )
+        )
+        state.identity_audits.extend(output.audits)
+        verified = {
+            item.paper_id for item in output.audits if item.status == VerificationStatus.VERIFIED
+        }
+        # A retained identity contradiction is never cleared by a newer positive flag.
+        verified -= {item.paper_id for item in state.identity_audits if item.conflicts}
+        eligible = [
+            item
+            for item in state.candidates
+            if item.paper.paper_id in verified
+            and SourceIntegrityGate().evaluate([item.paper]).passed
+        ]
+        shortlist = diverse_shortlist(
+            eligible,
+            self.settings.research.max_core_papers,
+            vocabulary("expected_method_families.yaml", "families"),
+            utcnow().year,
+        )
+        state.core_paper_ids, state.shortlist_reasons = (
+            shortlist.paper_ids,
+            shortlist.selection_reasons,
+        )
 
     def _canonicalize(self, candidates: list[PaperCandidate]) -> list[PaperCandidate]:
         library = self.repository.list_all("papers", Paper)

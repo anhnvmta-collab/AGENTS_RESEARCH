@@ -97,6 +97,8 @@ def validate_graph(state: WorkflowState) -> None:
     state.__class__.model_validate_json(state.model_dump_json())
     papers = unique((item.paper for item in state.candidates), "paper_id")
     require(state.core_paper_ids, papers, "core-to-paper")
+    for identity_audit in state.identity_audits:
+        require([identity_audit.paper_id], papers, "identity-audit-to-paper")
     evidence = unique(state.evidence, "evidence_id")
     claims = unique(state.claims, "claim_id")
     gaps = unique(state.gaps, "gap_id")

@@ -18,6 +18,7 @@ from research_council.schemas.models import (
     NoveltyDecision,
     PaperCandidate,
     PaperChunk,
+    PaperMetadata,
     PriorArtReport,
     QualityGateResult,
     ResearchClaim,
@@ -31,6 +32,7 @@ from research_council.schemas.models import (
     TargetedSearchRequest,
     WorkflowEvent,
 )
+from research_council.validation.identity import PaperIdentityAudit
 
 
 class WorkflowState(Schema):
@@ -67,3 +69,6 @@ class WorkflowState(Schema):
     events: list[WorkflowEvent] = Field(default_factory=list)
     saturation: list[SearchSaturationSignal] = Field(default_factory=list)
     core_paper_ids: list[UUID] = Field(default_factory=list)
+    identity_audits: list[PaperIdentityAudit] = Field(default_factory=list)
+    identity_observations: dict[str, list[PaperMetadata]] = Field(default_factory=dict)
+    shortlist_reasons: dict[UUID, list[str]] = Field(default_factory=dict)

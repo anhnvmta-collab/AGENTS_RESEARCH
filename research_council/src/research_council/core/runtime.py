@@ -35,6 +35,7 @@ from research_council.tools.search import (
     OpenAlexAdapter,
     SearchAdapter,
 )
+from research_council.validation.identity import IdentityAuditService, IdentityInput
 
 
 def open_repository(workspace: Path) -> SQLRepository:
@@ -175,6 +176,8 @@ class Runtime:
         tools.register("citation_search", SearchInput, discovery.citation_search)
         tools.register("local_read", SearchInput, discovery.local_read)
         tools.register("metadata_verify", AuditInput, audit.audit)
+        identity = IdentityAuditService(metadata, pipeline.concurrency.searches)
+        tools.register("identity_verify", IdentityInput, identity.audit)
         return pipeline
 
     async def __aexit__(self, *_: object) -> None:

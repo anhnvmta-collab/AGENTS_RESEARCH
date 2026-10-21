@@ -14,3 +14,11 @@ control. Planner/perspective/query roles extend their existing contracts only wh
 is explicitly configured. Seed list remains empty until primary-source curation in 11I. No
 scientific conclusion or readiness advancement is produced by configuration.
 11A checks: formatter/lint/mypy passed (83 source files); 115 offline tests passed, 0 failed. Existing 113 regressions remain passing.
+
+## 11B identity, coverage and shortlist
+Added typed metadata-only PaperIdentityAudit, explicit DOI/title/year/author/venue conflicts,
+pre-dedup observation retention and a second identity check before scientific CORE selection.
+Diversity selection reserves older, recent low/unknown-citation and implementation papers where
+slots permit. Seed recall, lexical method/concept coverage and explicitly labelled citation-edge
+recall have denominators and null for unmeasured cases. No scalar confidence clears a conflict.
+Checks: formatter/lint/mypy passed (86 source files); 122 offline tests passed, 0 failed.
