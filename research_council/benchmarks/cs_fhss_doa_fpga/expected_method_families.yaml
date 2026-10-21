@@ -1,0 +1,15 @@
+notice: Coverage probes, not claims that every family solves the benchmark problem.
+families:
+  OMP: [orthogonal matching pursuit, OMP]
+  CoSaMP: [CoSaMP, compressive sampling matching pursuit]
+  IHT: [iterative hard thresholding, IHT]
+  LASSO: [LASSO, basis pursuit]
+  ADMM: [ADMM, alternating direction method]
+  Bayesian: [sparse Bayesian, Bayesian compressed sensing]
+  MUSIC: [MUSIC, multiple signal classification]
+  ESPRIT: [ESPRIT]
+  sparse_DOA: [sparse DOA, sparse direction of arrival]
+  multiband_sampling: [modulated wideband converter, sub-Nyquist, multicoset]
+  FPGA: [FPGA, field programmable gate array]
+  RFSoC: [RFSoC]
+  SDR: [SDR, software defined radio]

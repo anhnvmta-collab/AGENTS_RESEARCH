@@ -13,3 +13,11 @@ class ResearchPlanner(BaseResearchAgent[QuestionInput, ResearchPlan]):
     input_schema = QuestionInput
     output_schema = ResearchPlan
     prompt_file = "research_planner.md"
+
+    async def execute(self, value: QuestionInput) -> ResearchPlan:
+        output = await super().execute(value)
+        if self.router.settings.science_benchmark:
+            from research_council.validation.benchmark import load_benchmark
+
+            output.subquestions = {**output.subquestions, **load_benchmark().subquestions}
+        return output

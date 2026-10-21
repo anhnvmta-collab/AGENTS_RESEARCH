@@ -26,6 +26,7 @@ packages = ["src/research_council"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "prompts" = "research_council/prompts"
+"benchmarks/cs_fhss_doa_fpga" = "research_council/benchmarks/cs_fhss_doa_fpga"
 
 [tool.ruff]
 target-version = "py311"

@@ -1,0 +1,42 @@
+identifier: CS_FHSS_DOA_FPGA
+version: '1.0'
+question:
+  topic: Compressed Sensing for Real-Time Detection, Parameter Estimation and Direction-of-Arrival Estimation of Frequency-Hopping UAV Signals on Coherent SDR/FPGA Platforms
+  constraints:
+    - FHSS 500-1000 hops/s; benchmark constraint, not a published result
+    - Coherent multi-channel SDR receiver
+    - FPGA / RFSoC / Zynq-class target
+    - ADRV9009, Zynq UltraScale+ and RFSoC are potential hardware families, not assumed implementations
+subquestions:
+  RQ1: {topic: 'What compressed sensing approaches exist for wideband or FHSS signal detection?'}
+  RQ2: {topic: 'Which sparse recovery algorithms have demonstrated sufficient complexity for real-time implementation?'}
+  RQ3: {topic: 'Which methods estimate carrier frequency, hop timing, duration, sequence and band occupancy jointly or sequentially?'}
+  RQ4: {topic: 'Which methods combine sparse sensing with direction-of-arrival estimation?'}
+  RQ5: {topic: 'Which approaches support coherent multi-channel receivers?'}
+  RQ6: {topic: 'Which approaches have FPGA, SDR, GPU or RFSoC implementations?'}
+  RQ7: {topic: 'What are the primary computational and memory bottlenecks?'}
+  RQ8: {topic: 'Which prior work specifically targets UAV communication signals?'}
+  RQ9: {topic: 'Which work operates near 500-1000 hops/s and under what assumptions?'}
+  RQ10: {topic: 'Which scoped scientific gaps remain after the closest prior art is considered?'}
+perspectives: [THEORETICAL, ALGORITHMIC, SIGNAL MODEL, TIME-FREQUENCY, COMPRESSED SENSING, SPARSE RECOVERY, DOA, ARRAY PROCESSING, REAL-TIME, FPGA, RFSoC, SDR, EXPERIMENTAL, UAV APPLICATION]
+query_families:
+  - name: detection
+    provenance: Phase 11 benchmark RQ1; operator-defined coverage probe
+    queries: [compressed sensing frequency hopping signal detection, sparse recovery FHSS, sub-Nyquist frequency hopping, wideband sparse spectrum sensing]
+  - name: direction_finding
+    provenance: Phase 11 benchmark RQ4-RQ5; complementary array terminology
+    queries: [compressed sensing direction of arrival, sparse DOA wideband, joint sparse spectrum DOA, coherent multi-channel array processing]
+  - name: parameters
+    provenance: Phase 11 benchmark RQ3-RQ9
+    queries: [frequency hopping parameter estimation, frequency hopping hop timing dwell time estimation, frequency hopping 1000 hops per second]
+  - name: implementation
+    provenance: Phase 11 benchmark RQ2-RQ6-RQ7; algorithm and hardware terminology
+    queries: [FHSS detection FPGA, sparse recovery FPGA, OMP FPGA implementation, CoSaMP FPGA, ADMM FPGA sparse recovery, compressed sensing SDR implementation, sub-Nyquist SDR spectrum sensing, RFSoC sparse reconstruction]
+  - name: application
+    provenance: Phase 11 benchmark RQ8; alternative application terminology
+    queries: [UAV frequency hopping communication detection, drone RF signal detection sparse]
+  - name: older_and_mathematical
+    provenance: Phase 11 terminology-bias control; mathematical and older terminology
+    queries: [compressive sampling multiband signals, modulated wideband converter, sparse approximation restricted isometry coherence, matching pursuit direction finding interferometry]
+negative_control: Apply the existing OMP algorithm to UAV FHSS data without a mathematical or implementation contribution.
+notice: Benchmark constraints and search probes only. No findings, exhaustive seed list or scientific readiness is implied.

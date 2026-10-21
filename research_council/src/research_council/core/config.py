@@ -71,6 +71,7 @@ class Settings(Schema):
         default_factory=lambda: {profile: [Route()] for profile in TaskProfile}
     )
     role_routes: dict[str, list[Route]] = Field(default_factory=dict)
+    science_benchmark: str | None = None
     retries: int = Field(default=2, ge=0, le=5)
     timeout_seconds: float = Field(default=60, gt=0, le=600)
     retry_base_seconds: float = Field(default=0.5, ge=0, le=30)

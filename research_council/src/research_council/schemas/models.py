@@ -149,6 +149,7 @@ class ResearchPlan(Schema):
     inclusion_criteria: list[str] = Field(default_factory=list)
     exclusion_criteria: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    subquestions: dict[str, ResearchQuestion] = Field(default_factory=dict)
 
 
 class SearchQuery(Schema):
@@ -167,6 +168,8 @@ class SearchQuery(Schema):
     ] = "broad"
     adapter: str = "all"
     iteration: int = Field(default=0, ge=0)
+    family: str | None = None
+    provenance: str | None = None
 
 
 class PaperMetadata(Schema):

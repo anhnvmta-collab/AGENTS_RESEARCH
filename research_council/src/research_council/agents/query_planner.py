@@ -19,5 +19,12 @@ class QueryPlanner(BaseResearchAgent[PlanInput, QueriesOutput]):
         unique_queries = {(query.text, query.strategy): query for query in output.queries}
         for query in expanded:
             unique_queries.setdefault((query.text, query.strategy), query)
-        output.queries = list(unique_queries.values())[: self.router.settings.research.max_queries]
+        priority = []
+        if self.router.settings.science_benchmark:
+            from research_council.validation.benchmark import load_benchmark
+
+            priority = load_benchmark().queries()
+        output.queries = (priority + list(unique_queries.values()))[
+            : self.router.settings.research.max_queries
+        ]
         return output

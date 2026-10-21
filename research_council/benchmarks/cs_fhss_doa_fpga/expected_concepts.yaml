@@ -1,0 +1,12 @@
+notice: Concepts to measure in observed metadata/evidence, not universal coverage.
+concepts:
+  frequency_hopping: [frequency hopping, FHSS]
+  compressed_sensing: [compressed sensing, compressive sensing, compressive sampling]
+  coherence: [coherent, coherence, calibration]
+  hop_parameters: [hop timing, dwell time, hop duration, hop sequence]
+  measurement_model: [measurement matrix, sensing matrix]
+  wideband: [wideband, multiband]
+  direction_finding: [direction of arrival, DOA, direction finding]
+  real_time: [real-time, real time, latency]
+  implementation: [FPGA, RFSoC, SDR, GPU]
+  UAV: [UAV, drone, unmanned aerial]
