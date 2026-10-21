@@ -41,6 +41,24 @@ class SearchConfig(Schema):
     results_per_query: int = Field(default=10, ge=1, le=100)
     local_documents: list[str] = Field(default_factory=list)
     contact_email: str | None = None
+    saturation_patience: int = Field(default=3, ge=1, le=10)
+    minimum_new_unique_rate: float = Field(default=0.02, ge=0, le=1)
+
+
+class TriageWeights(Schema):
+    relevance: float = Field(default=0.25, ge=0, le=1)
+    venue_quality: float = Field(default=0.15, ge=0, le=1)
+    novelty_relevance: float = Field(default=0.15, ge=0, le=1)
+    methodological_value: float = Field(default=0.15, ge=0, le=1)
+    hardware_relevance: float = Field(default=0.10, ge=0, le=1)
+    citation_influence: float = Field(default=0.10, ge=0, le=1)
+    freshness: float = Field(default=0.10, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def sum_to_one(self) -> TriageWeights:
+        if abs(sum(self.model_dump().values()) - 1) > 1e-8:
+            raise ValueError("Triage weights must sum to one")
+        return self
 
 
 class Settings(Schema):
@@ -48,6 +66,7 @@ class Settings(Schema):
     research: ResearchConfig = Field(default_factory=ResearchConfig)
     concurrency: ConcurrencyConfig = Field(default_factory=ConcurrencyConfig)
     search: SearchConfig = Field(default_factory=SearchConfig)
+    triage: TriageWeights = Field(default_factory=TriageWeights)
     models: dict[TaskProfile, list[Route]] = Field(
         default_factory=lambda: {profile: [Route()] for profile in TaskProfile}
     )

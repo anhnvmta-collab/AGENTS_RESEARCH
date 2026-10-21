@@ -68,6 +68,7 @@ def validate_graph(state: WorkflowState) -> None:
     # Round trip catches model_copy/list mutation bypasses at the persistence boundary.
     state.__class__.model_validate_json(state.model_dump_json())
     papers = unique((item.paper for item in state.candidates), "paper_id")
+    require(state.core_paper_ids, papers, "core-to-paper")
     evidence = unique(state.evidence, "evidence_id")
     claims = unique(state.claims, "claim_id")
     gaps = unique(state.gaps, "gap_id")

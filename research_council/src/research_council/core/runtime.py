@@ -22,8 +22,10 @@ from research_council.providers.http import AnthropicProvider, GeminiProvider, O
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import Mode, ResearchProject, ResearchQuestion, ResearchRun
 from research_council.storage.database import make_engine, migrate
+from research_council.tools.arxiv import ArxivAdapter
 from research_council.tools.audit import CitationAuditService
 from research_council.tools.discovery import DiscoveryService
+from research_council.tools.ieee import IEEEAdapter
 from research_council.tools.local import LocalDocumentAdapter
 from research_council.tools.registry import ToolRegistry
 from research_council.tools.search import (
@@ -137,6 +139,12 @@ class Runtime:
                 google=GeminiProvider(self.client),
             )
             for name in settings.search.adapters:
+                if name == "arxiv":
+                    adapters.append(ArxivAdapter(self.client))
+                    continue
+                if name == "ieee":
+                    adapters.append(IEEEAdapter())
+                    continue
                 if name == "crossref":
                     adapter: CrossrefAdapter | OpenAlexAdapter = CrossrefAdapter(
                         self.client, settings.search.contact_email

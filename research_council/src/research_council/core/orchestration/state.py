@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from pydantic import Field
 
 from research_council.agents.contracts import PaperOutline, SynthesisOutput
+from research_council.core.saturation import SearchSaturationSignal
 from research_council.schemas.models import (
     CitationAudit,
     Evidence,
@@ -58,3 +61,5 @@ class WorkflowState(Schema):
     limitations: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     events: list[WorkflowEvent] = Field(default_factory=list)
+    saturation: list[SearchSaturationSignal] = Field(default_factory=list)
+    core_paper_ids: list[UUID] = Field(default_factory=list)

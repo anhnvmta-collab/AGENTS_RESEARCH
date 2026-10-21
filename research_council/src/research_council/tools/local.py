@@ -27,6 +27,9 @@ class LocalDocumentAdapter:
             raise ValueError("Local source missing or exceeds size limit")
         return await asyncio.to_thread(self._read, path)
 
+    async def retrieve(self, paper: Paper) -> Paper | None:
+        return await self.read(paper.source_path) if paper.source_path else None
+
     def _read(self, path: Path) -> Paper:
         page_texts: dict[int, str] = {}
         title = path.stem

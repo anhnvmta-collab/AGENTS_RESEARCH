@@ -38,6 +38,7 @@ from research_council.core.orchestration.engine import (
 from research_council.core.orchestration.novelty import NoveltyLoop
 from research_council.core.orchestration.state import WorkflowState
 from research_council.core.routing import ModelRouter
+from research_council.core.saturation import SearchSaturationDetector
 from research_council.core.tracing import TraceSink
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import (
@@ -173,6 +174,7 @@ class ResearchPipeline:
         return state
 
     async def discovery(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
+        before_papers = {item.paper.paper_id for item in state.candidates}
         value = PlanInput(
             task="Prepare complementary perspectives and search strategies.",
             question=run.question,
@@ -249,20 +251,54 @@ class ResearchPipeline:
                 score = PaperScore(
                     paper_id=item.paper.paper_id,
                     relevance=overlap,
-                    freshness=max(0, 1 - (utcnow().year - item.paper.metadata.year) / 20)
+                    freshness=min(1, max(0, 1 - (utcnow().year - item.paper.metadata.year) / 20))
                     if item.paper.metadata.year
                     else 0,
                     rationale="Deterministic title overlap/freshness fallback; other components unknown.",
                 )
             item.score = score
-        state.candidates.sort(key=lambda item: item.score.total if item.score else 0, reverse=True)
-        state.candidates = state.candidates[: self.settings.research.max_core_papers]
+            item.aggregate_score = score.weighted_total(self.settings.triage.model_dump())
+        state.candidates.sort(key=lambda item: item.aggregate_score or 0, reverse=True)
+        state.core_paper_ids = [
+            item.paper.paper_id
+            for item in state.candidates
+            if SourceIntegrityGate().evaluate([item.paper]).passed
+        ][: self.settings.research.max_core_papers]
         state.gates.append(
-            SourceIntegrityGate().evaluate([item.paper for item in state.candidates])
+            SourceIntegrityGate().evaluate(
+                [
+                    item.paper
+                    for item in state.candidates
+                    if item.paper.paper_id in state.core_paper_ids
+                ]
+            )
         )
+        self.observe_search(state, before_papers, 0, 0)
         return state
 
+    def observe_search(
+        self, state: WorkflowState, before_papers: set, before_evidence: int, history_start: int
+    ) -> None:
+        attempts = state.search_history[history_start:]
+        complete = bool(attempts) and all(attempt.status == "SUCCESS" for attempt in attempts)
+        signal = SearchSaturationDetector(
+            self.settings.search.saturation_patience, self.settings.search.minimum_new_unique_rate
+        ).observe(
+            before_papers,
+            {item.paper.paper_id for item in state.candidates},
+            before_evidence,
+            len(state.evidence),
+            state.saturation,
+            search_complete=complete,
+        )
+        state.saturation.append(signal)
+
     async def _discover_queries(self, state: WorkflowState, queries: list[SearchQuery]) -> None:
+        if state.saturation and state.saturation[-1].status == "SEARCH_SATURATED":
+            state.warnings.append(
+                "SEARCH_SATURATED: additional broad searches skipped; coverage remains scoped."
+            )
+            return
         # The IEEE-compatible branch queries compliant indexed metadata, not IEEE scraping.
         broad = SearchInput(task="Broad metadata discovery", queries=queries)
         ieee = SearchInput(
@@ -295,6 +331,14 @@ class ResearchPipeline:
             else:
                 state.warnings.append(f"Discovery branch failed: {type(result).__name__}")
         state.candidates = self._canonicalize(state.candidates)
+        accepted = [
+            item.paper.paper_id
+            for item in state.candidates
+            if SourceIntegrityGate().evaluate([item.paper]).passed
+        ]
+        state.core_paper_ids = list(dict.fromkeys(state.core_paper_ids + accepted))[
+            : self.settings.research.max_core_papers
+        ]
 
     def _canonicalize(self, candidates: list[PaperCandidate]) -> list[PaperCandidate]:
         library = self.repository.list_all("papers", Paper)
@@ -324,6 +368,7 @@ class ResearchPipeline:
             item.paper
             for item in state.candidates
             if item.paper.paper_id not in done
+            and item.paper.paper_id in state.core_paper_ids
             and SourceIntegrityGate().evaluate([item.paper]).passed
         ]
 
@@ -652,6 +697,8 @@ class PipelineNoveltyOperations:
         )
 
     async def targeted_search(self, queries: list[str], state: WorkflowState) -> WorkflowState:
+        before_papers = {item.paper.paper_id for item in state.candidates}
+        before_evidence, history_start = len(state.evidence), len(state.search_history)
         targeted = [
             SearchQuery(text=text, strategy="targeted", iteration=state.novelty_iteration)
             for text in queries[: self.pipeline.settings.research.max_queries]
@@ -659,4 +706,6 @@ class PipelineNoveltyOperations:
         state.queries.extend(targeted)
         await self.pipeline._discover_queries(state, targeted)
         state = await self.pipeline.analysis(self.run, state)
-        return await self.pipeline.gaps(self.run, state)
+        state = await self.pipeline.gaps(self.run, state)
+        self.pipeline.observe_search(state, before_papers, before_evidence, history_start)
+        return state

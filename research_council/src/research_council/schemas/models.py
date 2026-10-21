@@ -233,20 +233,19 @@ class PaperScore(Schema):
 
     @property
     def total(self) -> float:
-        return (
-            sum(
-                (
-                    self.relevance * 3,
-                    self.venue_quality,
-                    self.methodological_value * 2,
-                    self.novelty_relevance * 2,
-                    self.hardware_relevance,
-                    self.citation_influence,
-                    self.freshness,
-                )
-            )
-            / 11
-        )
+        return self.weighted_total()
+
+    def weighted_total(self, weights: dict[str, float] | None = None) -> float:
+        selected = weights or {
+            "relevance": 0.25,
+            "venue_quality": 0.15,
+            "novelty_relevance": 0.15,
+            "methodological_value": 0.15,
+            "hardware_relevance": 0.10,
+            "citation_influence": 0.10,
+            "freshness": 0.10,
+        }
+        return float(sum(getattr(self, name) * weight for name, weight in selected.items()))
 
 
 class PaperCandidate(Schema):
@@ -254,6 +253,7 @@ class PaperCandidate(Schema):
     query_ids: list[UUID] = Field(default_factory=list)
     discovery_sources: list[str] = Field(default_factory=list)
     score: PaperScore | None = None
+    aggregate_score: Score | None = None
 
 
 class Evidence(Schema):

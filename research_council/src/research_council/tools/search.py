@@ -5,32 +5,20 @@ import os
 import random
 import re
 from html import unescape
-from typing import Any, Protocol
+from typing import Any
 from urllib.parse import quote
 from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 
+from research_council.core.retry import retry_after_seconds
 from research_council.core.security import sanitize_text
 from research_council.schemas.models import Paper, PaperMetadata, SearchQuery
+from research_council.tools.ports import CitationProvider, MetadataProvider, PaperSearchProvider
 
-
-class SearchAdapter(Protocol):
-    name: str
-
-    async def search(self, query: SearchQuery, limit: int) -> list[Paper]: ...
-
-
-class CitationAdapter(Protocol):
-    name: str
-
-    async def explore(self, paper: Paper, direction: str, limit: int) -> list[Paper]: ...
-
-
-class MetadataAdapter(Protocol):
-    name: str
-
-    async def resolve(self, doi: str) -> PaperMetadata | None: ...
+SearchAdapter = PaperSearchProvider
+MetadataAdapter = MetadataProvider
+CitationAdapter = CitationProvider
 
 
 class SearchError(RuntimeError):
@@ -68,10 +56,9 @@ class MetadataHTTP:
                 if response.status_code == 404:
                     return {}
                 if response.status_code == 429 or response.status_code >= 500:
-                    try:
-                        delay = max(delay, min(60, float(response.headers.get("retry-after", "0"))))
-                    except ValueError:
-                        pass
+                    delay = max(
+                        delay, retry_after_seconds(response.headers.get("retry-after")) or 0
+                    )
                     raise SearchError("Transient metadata search failure")
                 if response.is_error:
                     raise ValueError("Metadata adapter rejected the request")

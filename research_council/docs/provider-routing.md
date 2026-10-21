@@ -29,3 +29,5 @@ Official protocol references, checked 2026-10-21:
 * [Anthropic structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
 * [Gemini structured outputs](https://ai.google.dev/gemini-api/docs/structured-output)
 * [Crossref REST API](https://www.crossref.org/documentation/retrieve-metadata/rest-api/)
+
+Scientific source references checked 2026-10-21: [arXiv API manual](https://info.arxiv.org/help/api/user-manual.html) and [arXiv API terms](https://info.arxiv.org/help/api/tou.html). The adapter serializes metadata requests with a minimum three-second interval. IEEE official documentation could not be retrieved in this session; its authenticated backend remains optional rather than an unverified endpoint implementation.
