@@ -13,8 +13,12 @@ CITATION_VERIFICATION. Deterministic fallback never silently changes live data t
 Retries cover transient timeouts, 429/5xx and invalid structured output. Backoff is bounded,
 exponential with jitter and respects Retry-After. Authentication and bad configuration fail fast.
 Each attempt persists valid-output status, usage when returned, latency, retry number and error
-class. Costs are null unless configured token rates exist; zero is reserved for known-free fake
-calls. Human evaluation scores can be attached later. Benchmarks do not alter routes automatically.
+class. Live routes require configured token rates. Missing usage, timeouts and interrupted calls
+retain a conservative reservation with `cost_basis=reserved_upper_bound`; known-free fake calls
+cost zero. Metrics persist before each request so an interrupted call remains observable and
+budgeted on resume. Human evaluation scores can be attached later. Benchmarks assess each
+configured route without altering saved routing configuration. Budgets cover model calls,
+excluding search-service billing.
 
 The shared schema is validated locally even with provider structured output. Tool calls are
 data, never executed automatically. Initial stream implementations may buffer a full response;

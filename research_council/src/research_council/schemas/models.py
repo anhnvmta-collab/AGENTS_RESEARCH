@@ -177,6 +177,18 @@ class Paper(Schema):
     page_texts: dict[int, str] = Field(default_factory=dict)
 
 
+class SearchAttempt(Schema):
+    attempt_id: UUID = Field(default_factory=uuid4)
+    adapter: str
+    operation: str = "search"
+    query: SearchQuery | None = None
+    seed_paper_id: UUID | None = None
+    status: Literal["SUCCESS", "FAILED"]
+    result_count: int = Field(default=0, ge=0)
+    error_type: str | None = None
+    completed_at: datetime = Field(default_factory=utcnow)
+
+
 class PaperScore(Schema):
     paper_id: UUID
     relevance: Score = 0
@@ -227,6 +239,7 @@ class Evidence(Schema):
     normalized_statement: str
     agent_interpretation: str = ""
     extraction_agent: str
+    provenance: Literal["live", "local", "fixture"] = "live"
     verification_status: VerificationStatus = VerificationStatus.UNVERIFIED
     confidence: Score = 0
     created_at: datetime = Field(default_factory=utcnow)
@@ -302,6 +315,8 @@ class PriorArtReport(Schema):
     queries: list[str] = Field(default_factory=list)
     matches: list[PriorArtMatch] = Field(default_factory=list)
     search_failures: list[str] = Field(default_factory=list)
+    discovered_candidates: list[PaperCandidate] = Field(default_factory=list)
+    search_attempts: list[SearchAttempt] = Field(default_factory=list)
 
 
 class ReviewReason(Schema):
@@ -389,6 +404,7 @@ class ModelExecution(AgentExecution):
     estimated_cost: float | None = Field(default=None, ge=0)
     structured_output_valid: bool = False
     human_evaluation_score: Score | None = None
+    cost_basis: str = "usage"
 
 
 class QualityGateResult(Schema):

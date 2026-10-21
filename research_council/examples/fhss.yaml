@@ -1,0 +1,12 @@
+title: Compressed Sensing for Real-Time Detection, Parameter Estimation and DOA of FHSS UAV Signals on Coherent SDR/FPGA Platforms
+question:
+  topic: Compressed Sensing for Real-Time Detection, Parameter Estimation and DOA of FHSS UAV Signals on Coherent SDR/FPGA Platforms
+  constraints:
+    - FHSS approximately 500–1000 hops/s
+    - Coherent multi-channel receiver
+    - Real-time processing
+    - SDR/FPGA implementation
+    - Compressed Sensing
+    - DOA estimation
+goal: Identify defensible gaps and candidate contributions for peer-reviewed engineering research.
+notice: SYSTEM TEST INPUT ONLY. No literature findings or measured results are supplied.

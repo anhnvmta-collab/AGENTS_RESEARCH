@@ -11,3 +11,6 @@ class LocalDocumentScout(BaseResearchAgent[SearchInput, CandidatesOutput]):
     input_schema = SearchInput
     output_schema = CandidatesOutput
     prompt_file = "local_document_scout.md"
+
+    async def execute(self, value: SearchInput) -> CandidatesOutput:
+        return CandidatesOutput.model_validate(await self.invoke_tool("local_read", value))

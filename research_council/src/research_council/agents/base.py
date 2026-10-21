@@ -61,6 +61,9 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
     async def run(self, value: InputT) -> OutputT:
         started = perf_counter()
         execution = AgentExecution(run_id=self.router.run_id, agent_id=self.name, task=self.role)
+        self.router.repository.save(
+            "agent_executions", execution.execution_id, execution, self.router.run_id
+        )
         try:
             validated = self.validate_input(value)
             result = self.validate_output(await self.execute(validated))

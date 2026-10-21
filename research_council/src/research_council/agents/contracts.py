@@ -25,6 +25,7 @@ from research_council.schemas.models import (
     ResearchQuestion,
     ReviewerReport,
     Schema,
+    SearchAttempt,
     SearchQuery,
 )
 
@@ -66,6 +67,7 @@ class SearchInput(AgentInput):
 class CandidatesOutput(Schema):
     candidates: list[PaperCandidate] = Field(default_factory=list)
     failures: list[str] = Field(default_factory=list)
+    attempts: list[SearchAttempt] = Field(default_factory=list)
 
 
 class TriageInput(QuestionInput):

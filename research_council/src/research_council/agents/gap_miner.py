@@ -11,3 +11,20 @@ class GapMiner(BaseResearchAgent[GapInput, GapsOutput]):
     input_schema = GapInput
     output_schema = GapsOutput
     prompt_file = "gap_miner.md"
+
+    async def execute(self, value: GapInput) -> GapsOutput:
+        output = await super().execute(value)
+        evidence = {item.evidence_id for item in value.evidence}
+        claims = {item.claim_id for item in value.claims}
+        for gap in output.gaps:
+            if not set(gap.evidence_ids).issubset(evidence) or not set(gap.claim_ids).issubset(
+                claims
+            ):
+                raise ValueError("Gap references unknown evidence/claims")
+            if any(
+                phrase in gap.opportunity.lower()
+                for phrase in ("no one has", "nobody has", "never been studied")
+            ):
+                raise ValueError("Unbounded absence claim")
+            gap.search_scope = value.search_scope
+        return output

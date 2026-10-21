@@ -91,6 +91,7 @@ class OpenAIProvider(HTTPProvider):
         usage = result.get("usage") or {}
         return LLMResponse(
             text="".join(text_parts),
+            usage_available=bool(usage),
             input_tokens=usage.get("input_tokens", 0),
             output_tokens=usage.get("output_tokens", 0),
             tool_calls=calls,
@@ -130,6 +131,7 @@ class AnthropicProvider(HTTPProvider):
         content = result.get("content", [])
         return LLMResponse(
             text="".join(part["text"] for part in content if part.get("type") == "text"),
+            usage_available=bool(usage),
             input_tokens=usage.get("input_tokens", 0),
             output_tokens=usage.get("output_tokens", 0),
             tool_calls=[
@@ -173,6 +175,7 @@ class GeminiProvider(HTTPProvider):
         parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
         return LLMResponse(
             text="".join(part.get("text", "") for part in parts),
+            usage_available=bool(usage),
             input_tokens=usage.get("promptTokenCount", 0),
             output_tokens=usage.get("candidatesTokenCount", 0),
             tool_calls=[

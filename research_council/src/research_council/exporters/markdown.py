@@ -1,0 +1,274 @@
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+from pathlib import Path
+from typing import Any, Protocol
+
+from research_council.core.orchestration.state import WorkflowState
+from research_council.core.security import csv_safe, workspace_path
+from research_council.repositories.store import SQLRepository
+from research_council.schemas.models import ModelExecution, ResearchRun, utcnow
+
+
+class Exporter(Protocol):
+    def export(self, run: ResearchRun, state: WorkflowState) -> Path: ...
+
+
+def md(value: object) -> str:
+    return str(value).replace("<", "&lt;").replace(">", "&gt;").replace("|", "\\|")
+
+
+class MarkdownExporter:
+    def __init__(self, workspace: Path, repository: SQLRepository) -> None:
+        self.workspace, self.repository = workspace, repository
+
+    def export(self, run: ResearchRun, state: WorkflowState) -> Path:
+        target = workspace_path(self.workspace, f"runs/{run.run_id}/exports")
+        target.mkdir(parents=True, exist_ok=True)
+
+        def write(name: str, text: str) -> None:
+            path = target / name
+            temporary = workspace_path(self.workspace, path.with_suffix(path.suffix + ".tmp"))
+            temporary.write_text(text, encoding="utf-8")
+            temporary.replace(path)
+
+        def json_file(name: str, value: Any) -> None:
+            write(name, json.dumps(value, indent=2, ensure_ascii=False))
+
+        def csv_file(name: str, rows: list[dict[str, Any]], columns: list[str]) -> None:
+            path = target / name
+            temporary = workspace_path(self.workspace, path.with_suffix(".csv.tmp"))
+            with temporary.open("w", encoding="utf-8-sig", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=columns)
+                writer.writeheader()
+                writer.writerows({key: csv_safe(row.get(key)) for key in columns} for row in rows)
+            temporary.replace(path)
+
+        notice = (
+            "SYNTHETIC FIXTURES — NOT SCIENTIFIC FINDINGS\n\n"
+            if run.provenance == "fixture"
+            else ""
+        )
+        json_file("research_plan.json", state.plan.model_dump(mode="json"))
+        paper_rows = [
+            {
+                "paper_id": item.paper.paper_id,
+                "title": item.paper.metadata.title,
+                "authors": "; ".join(item.paper.metadata.authors),
+                "year": item.paper.metadata.year,
+                "doi": item.paper.metadata.doi,
+                "url": item.paper.metadata.url,
+                "provenance": item.paper.provenance,
+                "score": item.score.total if item.score else None,
+                **(item.score.model_dump(exclude={"paper_id"}) if item.score else {}),
+            }
+            for item in state.candidates
+        ]
+        csv_file(
+            "paper_candidates.csv",
+            paper_rows,
+            [
+                "paper_id",
+                "title",
+                "authors",
+                "year",
+                "doi",
+                "url",
+                "provenance",
+                "score",
+                "relevance",
+                "venue_quality",
+                "methodological_value",
+                "novelty_relevance",
+                "hardware_relevance",
+                "citation_influence",
+                "freshness",
+                "rationale",
+            ],
+        )
+        json_file("literature_matrix.json", [row.model_dump(mode="json") for row in state.matrix])
+        fields = sorted({key for row in state.matrix for key in row.fields})
+        csv_file(
+            "literature_matrix.csv",
+            [
+                {
+                    "paper_id": row.paper_id,
+                    "evidence_ids": ";".join(map(str, row.evidence_ids)),
+                    **row.fields,
+                }
+                for row in state.matrix
+            ],
+            ["paper_id", "evidence_ids", *fields],
+        )
+        write("evidence.jsonl", "".join(item.model_dump_json() + "\n" for item in state.evidence))
+        write(
+            "research_gaps.md",
+            notice
+            + "# Evidence-scoped research gaps\n\n"
+            + (
+                "\n\n".join(
+                    f"## {gap.gap_type}: {gap.gap_id}\n\nEvidence: {', '.join(map(str, gap.evidence_ids))}\n\nLimitation: {md(gap.limitation)}\n\nConsequence: {md(gap.consequence)}\n\nOpportunity: {md(gap.opportunity)}\n\nSearch scope: {md(gap.search_scope)}"
+                    for gap in state.gaps
+                )
+                or "No evidence-grounded gaps available."
+            ),
+        )
+        write(
+            "novelty_candidates.md",
+            notice
+            + "# Unverified candidate contributions\n\n"
+            + (
+                "\n\n".join(
+                    f"## {candidate.candidate_id} revision {candidate.revision}\n\nClaim: {md(candidate.normalized_claim)}\n\nRisk: {candidate.risk_level}\n\nWhat: {md(candidate.what_is_new)}\n\nWhy: {md(candidate.why_it_matters)}\n\nPrior-method limitation: {md(candidate.why_prior_methods_insufficient)}\n\nMethod: {md(candidate.proposed_method)}\n\nTest: {md(candidate.validation_plan)}\n\nEvidence: {', '.join(map(str, candidate.evidence_ids))}"
+                    for candidate in state.novelty_candidates
+                )
+                or "No candidates available."
+            ),
+        )
+        write(
+            "prior_art_report.md",
+            notice
+            + "# Independent novelty attack\n\n"
+            + (
+                "\n\n".join(
+                    f"## {decision.candidate_id} revision {decision.revision}: {decision.verdict}\n\nConfidence: {decision.novelty_confidence}\n\nRemaining risks: {'; '.join(map(md, decision.remaining_risks))}\n\nFollow-up queries: {'; '.join(map(md, decision.required_followup_searches))}"
+                    for decision in state.decisions
+                )
+                or "No contribution-specific attack completed."
+            )
+            + "\n\n## Hunter/reviewer records\n\n```json\n"
+            + json.dumps(
+                {
+                    "prior_art": [
+                        report.model_dump(mode="json", exclude={"discovered_candidates"})
+                        for report in state.prior_art
+                    ],
+                    "reviews": [report.model_dump(mode="json") for report in state.reviews],
+                },
+                indent=2,
+            )
+            + "\n```\n",
+        )
+        write(
+            "hardware_feasibility.md",
+            notice
+            + "# Hardware feasibility — assessments, not measurements\n\n"
+            + (
+                "\n\n".join(
+                    f"## {assessment.platform}: {assessment.feasibility}\n\n{md(assessment.justification)}\n\nUnknowns: {', '.join(map(md, assessment.unknowns))}\n\nEvidence: {', '.join(map(str, assessment.evidence_ids))}\n\n```json\n{json.dumps(assessment.parameters, indent=2)}\n```"
+                    for assessment in state.hardware
+                )
+                or "Hardware assessment was not completed."
+            ),
+        )
+        write(
+            "experiment_plan.md",
+            notice
+            + "# Proposed experiments — no measured results\n\n"
+            + (
+                "\n\n".join(
+                    f"## {md(plan.objective)}\n\nBaselines: {'; '.join(map(md, plan.baselines))}\n\nMetrics: {'; '.join(map(md, plan.metrics))}\n\nProcedures: {'; '.join(map(md, plan.procedures))}\n\nAblations: {'; '.join(map(md, plan.ablations))}\n\nStatistics: {md(plan.statistical_plan)}\n\nReproducibility: {'; '.join(map(md, plan.reproducibility))}\n\nLimitations: {'; '.join(map(md, plan.limitations))}"
+                    for plan in state.experiments
+                )
+                or "No experiment plan passed prerequisites."
+            ),
+        )
+        write(
+            "ieee_paper_plan.md",
+            notice
+            + f"# {md(state.outline.title)}\n\n"
+            + "\n\n".join(
+                f"## {md(section)}\n\n" + "\n".join(f"- {md(item)}" for item in items)
+                for section, items in state.outline.sections.items()
+            )
+            + "\n\nJournal quartile and publication acceptance are not established.\n",
+        )
+        csv_file(
+            "citation_audit.csv",
+            [
+                {
+                    "paper_id": audit.paper_id,
+                    "status": audit.status,
+                    "verifier": audit.verifier,
+                    "checks": json.dumps(audit.checks),
+                    "notes": "; ".join(audit.notes),
+                }
+                for audit in state.audits
+            ],
+            ["paper_id", "status", "verifier", "checks", "notes"],
+        )
+        report = [
+            f"# Research Council: {md(run.question.topic)}",
+            notice,
+            f"Run: {run.run_id} | Mode: {run.mode} | Status: {run.status} | Provenance: {run.provenance}",
+        ]
+        publication = any(gate.gate == 3 and gate.passed for gate in state.gates)
+        report += [
+            "## Publication readiness",
+            "PASSED" if publication else "NOT ESTABLISHED",
+            "## Verified scientific conclusions",
+            state.synthesis.summary,
+        ]
+        report += ["## Quality gates"]
+        report += [
+            f"- Gate {gate.gate}: {'PASS' if gate.passed else 'FAIL'} — {md('; '.join(gate.reasons) or 'Scoped checks passed.')}"
+            for gate in state.gates
+        ] or ["No gates evaluated."]
+        report += [
+            "## Traceable claim register",
+            "AUTHOR_REPORTED/DERIVED/AGENT_ANALYSIS entries below retain their stated verification status. Hypotheses are proposals.",
+        ]
+        evidence_lookup = {item.evidence_id: item for item in state.evidence}
+        papers = {item.paper.paper_id: item.paper for item in state.candidates}
+        for claim in state.claims:
+            report += [
+                f"### Claim {claim.claim_id}",
+                f"{md(claim.statement)} [{claim.claim_type}; {claim.verification_status}]",
+            ]
+            for identity in claim.evidence_ids:
+                item = evidence_lookup.get(identity)
+                if item and item.paper_id in papers:
+                    paper = papers[item.paper_id]
+                    report += [
+                        f"Evidence {identity} → Paper {paper.paper_id}: {md(paper.metadata.title)}; DOI: {md(paper.metadata.doi or 'unavailable')}; URL: {md(paper.metadata.url or 'unavailable')}; location: {md(item.source_location)}; page: {item.page}; section: {md(item.section or 'unavailable')}; table: {md(item.table or 'unavailable')}; figure: {md(item.figure or 'unavailable')}."
+                    ]
+        report += [
+            "## Limitations",
+            *[f"- {md(item)}" for item in state.limitations],
+            "## Operational warnings",
+            *[f"- {md(item)}" for item in state.warnings],
+            "## Scope",
+            "Search coverage is limited to logged queries and enabled adapters. Absence from this corpus does not establish universal novelty. See the accompanying evidence, audit and attack records.",
+        ]
+        write("final_report.md", "\n\n".join(report) + "\n")
+        executions = self.repository.list_all("model_executions", ModelExecution, run.run_id)
+        json_file(
+            "run_manifest.json",
+            {
+                "run": run.model_dump(mode="json"),
+                "exported_at": utcnow().isoformat(),
+                "config_fingerprint": run.config_fingerprint,
+                "publication_ready": publication,
+                "novelty_iterations": state.novelty_iteration,
+                "model_calls": len(executions),
+                "search_attempts": [
+                    attempt.model_dump(mode="json") for attempt in state.search_history
+                ],
+                "input_tokens": sum(item.input_tokens for item in executions),
+                "output_tokens": sum(item.output_tokens for item in executions),
+                "estimated_cost_usd": sum(item.estimated_cost or 0 for item in executions),
+                "cost_complete": all(item.estimated_cost is not None for item in executions),
+                "cost_includes_upper_bounds": any(
+                    item.cost_basis == "reserved_upper_bound" for item in executions
+                ),
+                "gates": [item.model_dump(mode="json") for item in state.gates],
+                "files": {
+                    path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                    for path in sorted(target.iterdir())
+                    if path.is_file() and path.name != "run_manifest.json"
+                },
+            },
+        )
+        return target

@@ -143,6 +143,12 @@ class SQLRepository:
         paper = self.get_paper(evidence.paper_id)
         if paper is None:
             raise ValueError("Evidence references an unknown paper")
+        evidence.provenance = paper.provenance
+        if (
+            paper.provenance == "fixture"
+            and evidence.verification_status == VerificationStatus.VERIFIED
+        ):
+            raise ValueError("Fixture evidence cannot be scientifically verified")
         source = (
             paper.page_texts.get(evidence.page, "") if evidence.page else paper.source_text or ""
         )
@@ -178,6 +184,12 @@ class SQLRepository:
     ) -> None:
         with self.engine.begin() as connection:
             for name, value in artifacts.items():
+                if name == "state":
+                    from research_council.core.orchestration.state import WorkflowState
+                    from research_council.storage.projector import project_state
+
+                    if isinstance(value, WorkflowState):
+                        project_state(self, connection, run, value)
                 if isinstance(value, Schema):
                     payload: Any = value.model_dump(mode="json")
                 elif isinstance(value, list):

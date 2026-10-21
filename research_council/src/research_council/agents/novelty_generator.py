@@ -11,3 +11,14 @@ class NoveltyGenerator(BaseResearchAgent[NoveltyInput, NoveltyOutput]):
     input_schema = NoveltyInput
     output_schema = NoveltyOutput
     prompt_file = "novelty_generator.md"
+
+    async def execute(self, value: NoveltyInput) -> NoveltyOutput:
+        output = await super().execute(value)
+        gaps = {item.gap_id for item in value.gaps}
+        evidence = {item.evidence_id for item in value.evidence}
+        for candidate in output.candidates:
+            if not set(candidate.gap_ids).issubset(gaps) or not set(
+                candidate.evidence_ids
+            ).issubset(evidence):
+                raise ValueError("Novelty proposal references unknown artifacts")
+        return output

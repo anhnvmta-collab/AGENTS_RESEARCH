@@ -1,0 +1,30 @@
+# Configure operator-selected model IDs and current per-million-token prices.
+# Keys belong in environment variables. Only enabled providers require their key.
+research:
+  max_novelty_iterations: 3
+  max_core_papers: 30
+  budget_usd: 5.0
+  human_approval_required: true
+concurrency: {agents: 5, searches: 5, paper_reads: 4}
+search:
+  adapters: [crossref, openalex]
+  results_per_query: 10
+  local_documents: []
+  contact_email: null
+models:
+  SEARCH_PLANNING:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  PAPER_EXTRACTION:
+    - {provider: anthropic, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  MATH_REASONING:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  HARDWARE_REASONING:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  SYNTHESIS:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  NOVELTY_GENERATION:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  ADVERSARIAL_REVIEW:
+    - {provider: google, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  CITATION_VERIFICATION:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}

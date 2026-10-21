@@ -29,8 +29,9 @@ class LLMRequest(Schema):
 
 class LLMResponse(Schema):
     text: str
-    input_tokens: int = 0
-    output_tokens: int = 0
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    usage_available: bool = True
     tool_calls: list[ToolCall] = Field(default_factory=list)
     finish_reason: str = "complete"
 

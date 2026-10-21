@@ -11,3 +11,6 @@ class CitationScout(BaseResearchAgent[SearchInput, CandidatesOutput]):
     input_schema = SearchInput
     output_schema = CandidatesOutput
     prompt_file = "citation_scout.md"
+
+    async def execute(self, value: SearchInput) -> CandidatesOutput:
+        return CandidatesOutput.model_validate(await self.invoke_tool("citation_search", value))

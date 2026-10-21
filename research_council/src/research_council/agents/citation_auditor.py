@@ -11,3 +11,6 @@ class CitationAuditor(BaseResearchAgent[AuditInput, AuditsOutput]):
     input_schema = AuditInput
     output_schema = AuditsOutput
     prompt_file = "citation_auditor.md"
+
+    async def execute(self, value: AuditInput) -> AuditsOutput:
+        return AuditsOutput.model_validate(await self.invoke_tool("metadata_verify", value))

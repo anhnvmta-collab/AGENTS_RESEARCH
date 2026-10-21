@@ -89,6 +89,13 @@ class ModelRouter:
                     model=route.model,
                     retry_count=attempt,
                 )
+                execution.estimated_cost = reservation
+                execution.cost_basis = (
+                    "known_free" if provider.name == "fake" else "reserved_upper_bound"
+                )
+                self.repository.save(
+                    "model_executions", execution.execution_id, execution, self.run_id
+                )
                 response: LLMResponse | None = None
                 retryable = False
                 retry_after = 0.0
@@ -98,6 +105,14 @@ class ModelRouter:
                         response = await provider.generate(request)
                     if response.tool_calls:
                         raise ValueError("Unexpected tool calls in structured-only request")
+                    if response.finish_reason in (
+                        "incomplete",
+                        "max_tokens",
+                        "MAX_TOKENS",
+                        "blocked",
+                        "content_filter",
+                    ):
+                        raise ProviderError()
                     result = schema.model_validate_json(response.text)
                     execution.status = "SUCCESS"
                     execution.structured_output_valid = True
@@ -118,16 +133,30 @@ class ModelRouter:
                         and exc.retryable
                     )
                     retry_after = (exc.retry_after or 0) if isinstance(exc, ProviderError) else 0
+                except Exception as exc:
+                    last_error = exc
+                    execution.status = "FAILED"
+                    execution.error_type = type(exc).__name__
                 finally:
                     execution.end_time = utcnow()
                     execution.latency = perf_counter() - started
                     if response:
                         execution.input_tokens = response.input_tokens
                         execution.output_tokens = response.output_tokens
+                    if execution.status == "RUNNING":
+                        execution.status = "CANCELLED"
+                        execution.error_type = "CancelledError"
                     execution.estimated_cost = (
                         self._cost(route, response)
-                        if response
-                        else (0 if provider.name == "fake" else None)
+                        if response and response.usage_available
+                        else (0 if provider.name == "fake" else reservation)
+                    )
+                    execution.cost_basis = (
+                        "known_free"
+                        if provider.name == "fake"
+                        else "usage"
+                        if response and response.usage_available
+                        else "reserved_upper_bound"
                     )
                     async with self.lock:
                         self.reserved -= reservation

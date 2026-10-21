@@ -11,3 +11,13 @@ class ReviewerTwo(BaseResearchAgent[ReviewInput, ReviewerReport]):
     input_schema = ReviewInput
     output_schema = ReviewerReport
     prompt_file = "reviewer_two.md"
+
+    async def execute(self, value: ReviewInput) -> ReviewerReport:
+        report = await super().execute(value)
+        if report.candidate_id != value.candidate_id or report.revision != value.revision:
+            raise ValueError("Reviewer candidate mismatch")
+        known = {item.evidence_id for item in value.evidence}
+        if any(not set(reason.evidence_ids).issubset(known) for reason in report.reasons):
+            raise ValueError("Reviewer references unknown evidence")
+        report.complete = True
+        return report
