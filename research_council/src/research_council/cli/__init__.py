@@ -208,7 +208,13 @@ def modify(
     workspace: WorkspaceOption = Path("workspace"),
 ) -> None:
     """Modify the question and invalidate dependent stages/approvals."""
-    decision(run_id, workspace, "modify", ResearchQuestion(topic=topic))
+    repo = open_repository(workspace)
+    try:
+        question = repo.get_run(checked_uuid(run_id)).question
+        updated = ResearchQuestion.model_validate({**question.model_dump(), "topic": topic})
+    finally:
+        repo.engine.dispose()
+    decision(run_id, workspace, "modify", updated)
 
 
 @models_app.command()

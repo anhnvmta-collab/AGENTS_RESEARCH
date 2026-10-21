@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 import yaml
-from pydantic import Field, model_validator
+from pydantic import Field, PrivateAttr, model_validator
 
 from research_council.schemas.models import Schema, TaskProfile
 
@@ -44,6 +44,7 @@ class SearchConfig(Schema):
 
 
 class Settings(Schema):
+    _fingerprint_alias: tuple[str, str] | None = PrivateAttr(default=None)
     research: ResearchConfig = Field(default_factory=ResearchConfig)
     concurrency: ConcurrencyConfig = Field(default_factory=ConcurrencyConfig)
     search: SearchConfig = Field(default_factory=SearchConfig)
@@ -65,9 +66,15 @@ class Settings(Schema):
         return [*self.models.values(), *self.role_routes.values()]
 
     def fingerprint(self) -> str:
-        return hashlib.sha256(
+        current = hashlib.sha256(
             json.dumps(self.model_dump(mode="json"), sort_keys=True).encode()
         ).hexdigest()
+        if self._fingerprint_alias and current == self._fingerprint_alias[0]:
+            return self._fingerprint_alias[1]
+        return current
+
+    def pin_compatible_fingerprint(self, expected: str) -> None:
+        self._fingerprint_alias = (self.fingerprint(), expected)
 
 
 def load_settings(path: Path | None = None) -> Settings:

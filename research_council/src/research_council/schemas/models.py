@@ -127,6 +127,16 @@ class ResearchPerspective(Schema):
     questions: list[str]
 
 
+class WorkflowEvent(Schema):
+    event_id: UUID = Field(default_factory=uuid4)
+    run_id: UUID
+    stage: str
+    event: Literal[
+        "RESUMED", "STAGE_STARTED", "STAGE_COMPLETED", "STAGE_FAILED", "PAUSED", "COMPLETED"
+    ]
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class ResearchPlan(Schema):
     objective: str = "Evidence is required before drawing conclusions."
     tasks: list[str] = Field(default_factory=list)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from pathlib import Path
 from uuid import UUID
@@ -171,4 +173,12 @@ class Runtime:
 
 
 def settings_for_run(repository: SQLRepository, run_id: UUID) -> Settings:
-    return Settings.model_validate(repository.artifacts(run_id)["settings"])
+    raw = repository.artifacts(run_id)["settings"]
+    settings = Settings.model_validate(raw)
+    expected = repository.get_run(run_id).config_fingerprint
+    if settings.fingerprint() != expected:
+        raw_fingerprint = hashlib.sha256(json.dumps(raw, sort_keys=True).encode()).hexdigest()
+        if raw_fingerprint != expected:
+            raise ValueError("Pinned run configuration fingerprint is invalid")
+        settings.pin_compatible_fingerprint(expected)
+    return settings

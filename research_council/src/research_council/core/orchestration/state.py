@@ -24,6 +24,7 @@ from research_council.schemas.models import (
     Schema,
     SearchAttempt,
     SearchQuery,
+    WorkflowEvent,
 )
 
 
@@ -56,3 +57,4 @@ class WorkflowState(Schema):
     pending_approval: str | None = None
     limitations: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    events: list[WorkflowEvent] = Field(default_factory=list)
