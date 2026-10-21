@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from pydantic import Field
 
 from research_council.core.gates import PublicationReadinessGate
+from research_council.core.integrity import unresolved_conflict
 from research_council.core.orchestration.engine import RunLease
 from research_council.core.orchestration.state import WorkflowState
 from research_council.repositories.store import SQLRepository
@@ -42,6 +43,12 @@ def attest_claim(
         ):
             raise ValueError("Claim cannot be attested without resolved source evidence")
         papers = {item.paper.paper_id: item.paper for item in state.candidates}
+        if unresolved_conflict(claim, state.conflicts) or any(
+            audit.status == VerificationStatus.CONTRADICTED
+            and (claim.claim_id in audit.claim_ids or audit.paper_id in claim.source_paper_ids)
+            for audit in state.audits
+        ):
+            raise ValueError("Unresolved citation/evidence conflict blocks scientific attestation")
         if any(
             identity not in papers
             or papers[identity].provenance == "fixture"
@@ -83,6 +90,18 @@ def attest_claim(
             state.audits,
             state.experiments,
             state.limitations,
+            conflicts=state.conflicts,
+            outline=state.outline,
+            novelty_candidates=[
+                item
+                for item in state.novelty_candidates
+                if any(
+                    decision.candidate_id == item.candidate_id
+                    and decision.revision == item.revision
+                    and decision.verdict == "SURVIVE"
+                    for decision in state.decisions
+                )
+            ],
         )
         if run.mode in (Mode.NOVELTY, Mode.AUDIT) and not any(
             item.gate == 2 and item.passed for item in state.gates

@@ -7,6 +7,7 @@ from typing import Protocol
 from research_council.core.gates import NoveltySurvivalGate
 from research_council.core.orchestration.state import WorkflowState
 from research_council.schemas.models import (
+    ModelExecution,
     NoveltyCandidate,
     NoveltyDecision,
     PriorArtReport,
@@ -32,13 +33,19 @@ class NoveltyOperations(Protocol):
 
 class NoveltyLoop:
     def __init__(
-        self, operations: NoveltyOperations, *, max_iterations: int = 3, minimum_evidence: int = 2
+        self,
+        operations: NoveltyOperations,
+        *,
+        max_iterations: int = 3,
+        minimum_evidence: int = 2,
+        execution_records: Callable[[], list[ModelExecution]] | None = None,
     ) -> None:
         if max_iterations < 1:
             raise ValueError("Novelty loop needs a positive bound")
         self.operations = operations
         self.max_iterations = max_iterations
         self.gate = NoveltySurvivalGate(minimum_evidence)
+        self.execution_records = execution_records
 
     async def run(
         self,
@@ -89,7 +96,16 @@ class NoveltyLoop:
                     or decision.revision != candidate.revision
                 ):
                     raise ValueError("Novelty judgment candidate mismatch")
-                gate = self.gate.evaluate(candidate, state.evidence, prior, review, decision)
+                gate = self.gate.evaluate(
+                    candidate,
+                    state.evidence,
+                    prior,
+                    review,
+                    decision,
+                    papers=[item.paper for item in state.candidates],
+                    executions=self.execution_records() if self.execution_records else [],
+                    conflicts=state.conflicts,
+                )
                 if decision.verdict == "SURVIVE" and not gate.passed:
                     decision.verdict = "REVISE"
                     decision.remaining_risks.extend(gate.reasons)

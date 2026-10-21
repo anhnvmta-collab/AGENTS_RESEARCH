@@ -52,4 +52,6 @@ class PriorArtHunter(BaseResearchAgent[ReviewInput, PriorArtReport]):
         report.discovered_candidates = discovered.candidates
         report.search_attempts = discovered.attempts
         report.matches.sort(key=lambda item: item.similarity, reverse=True)
+        for match in report.matches:
+            match.candidate_revision = value.revision
         return report

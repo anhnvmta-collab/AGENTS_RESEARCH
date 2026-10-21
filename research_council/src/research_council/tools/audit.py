@@ -60,6 +60,24 @@ class CitationAuditService:
             else None,
             "scientific_entailment": None,
         }
+        evidence_map = {item.evidence_id: item for item in value.evidence}
+        support_present = all(
+            bool(claim.evidence_ids) and set(claim.evidence_ids).issubset(evidence_map)
+            for claim in relevant_claims
+        )
+        checks["claim_support_present"] = support_present
+        checks["claim_evidence_consistent"] = (
+            all(
+                all(
+                    evidence_map[identity].paper_id in claim.source_paper_ids
+                    for identity in claim.evidence_ids
+                )
+                and not claim.contradicting_evidence_ids
+                for claim in relevant_claims
+            )
+            if support_present
+            else None
+        )
         if resolved:
             checks.update(
                 title=normalized_title(original.title) == normalized_title(resolved.title),
@@ -80,12 +98,20 @@ class CitationAuditService:
         audit.checks = checks
         contradictions = any(
             checks[key] is False
-            for key in ("title", "authors", "year", "doi", "source_location", "not_retracted")
+            for key in (
+                "title",
+                "authors",
+                "year",
+                "doi",
+                "source_location",
+                "not_retracted",
+                "claim_evidence_consistent",
+            )
         )
         if contradictions:
             audit.status = VerificationStatus.CONTRADICTED
             audit.notes.append("Identity, location or retraction conflict requires resolution.")
-        elif resolved:
+        elif resolved and support_present:
             audit.status = VerificationStatus.PARTIALLY_VERIFIED
         else:
             audit.notes.append("Independent metadata resolution unavailable.")

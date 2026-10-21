@@ -6,6 +6,7 @@ from research_council.agents.contracts import PaperOutline, SynthesisOutput
 from research_council.schemas.models import (
     CitationAudit,
     Evidence,
+    EvidenceConflict,
     ExperimentPlan,
     Gap,
     HardwareAssessment,
@@ -34,6 +35,7 @@ class WorkflowState(Schema):
     search_history: list[SearchAttempt] = Field(default_factory=list)
     candidates: list[PaperCandidate] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
+    conflicts: list[EvidenceConflict] = Field(default_factory=list)
     claims: list[ResearchClaim] = Field(default_factory=list)
     matrix: list[LiteratureRow] = Field(default_factory=list)
     gaps: list[Gap] = Field(default_factory=list)

@@ -6,9 +6,11 @@ from uuid import uuid5
 from sqlalchemy.engine import Connection
 
 from research_council.core.grounding import grounded_excerpt
+from research_council.core.integrity import synchronize_conflicts, validate_graph
 from research_council.core.orchestration.state import WorkflowState
 from research_council.repositories.store import normalized_title
 from research_council.schemas.models import ResearchRun, VerificationStatus
+from research_council.storage.graph import project_graph, record_id
 
 if TYPE_CHECKING:
     from research_council.repositories.store import SQLRepository
@@ -18,6 +20,9 @@ def project_state(
     repository: SQLRepository, connection: Connection, run: ResearchRun, state: WorkflowState
 ) -> None:
     """Project typed checkpoint artifacts into queryable tables in the same transaction."""
+    synchronize_conflicts(state)
+    validate_graph(state)
+    project_graph(repository, connection, run.run_id, state)
     papers = {candidate.paper.paper_id: candidate.paper for candidate in state.candidates}
     evidence = {item.evidence_id: item for item in state.evidence}
     for paper in papers.values():
@@ -43,7 +48,7 @@ def project_state(
         repository._put(
             connection,
             "evidence",
-            str(item.evidence_id),
+            str(record_id(run.run_id, "evidence", item.evidence_id)),
             item.model_dump(mode="json"),
             run_id=str(run.run_id),
             paper_id=str(item.paper_id),
@@ -69,7 +74,7 @@ def project_state(
         repository._put(
             connection,
             "claims",
-            str(claim.claim_id),
+            str(record_id(run.run_id, "claims", claim.claim_id)),
             claim.model_dump(mode="json"),
             run_id=str(run.run_id),
         )
@@ -84,7 +89,11 @@ def project_state(
             repository._put(
                 connection,
                 name,
-                str(getattr(artifact, key)),
+                str(
+                    record_id(
+                        run.run_id, name, getattr(artifact, key), getattr(artifact, "revision", 1)
+                    )
+                ),
                 artifact.model_dump(mode="json"),
                 run_id=str(run.run_id),
             )
@@ -93,7 +102,7 @@ def project_state(
             repository._put(
                 connection,
                 "prior_art_matches",
-                str(match.match_id),
+                str(record_id(run.run_id, "prior_art_matches", match.match_id)),
                 match.model_dump(mode="json"),
                 run_id=str(run.run_id),
             )
@@ -101,7 +110,7 @@ def project_state(
         repository._put(
             connection,
             "citation_audits",
-            str(audit.audit_id),
+            str(record_id(run.run_id, "citation_audits", audit.audit_id)),
             audit.model_dump(mode="json"),
             run_id=str(run.run_id),
             paper_id=str(audit.paper_id),

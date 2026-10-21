@@ -67,6 +67,11 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
         try:
             validated = self.validate_input(value)
             result = self.validate_output(await self.execute(validated))
+            model_execution = self.router.last_success.get(self.name)
+            if model_execution and "model_execution_id" in result.__class__.model_fields:
+                result = result.model_copy(
+                    update={"model_execution_id": model_execution.execution_id}
+                )
             execution.status = "SUCCESS"
             return result
         except Exception as exc:

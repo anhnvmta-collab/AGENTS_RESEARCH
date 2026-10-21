@@ -5,11 +5,16 @@ from research_council.core.orchestration.novelty import NoveltyLoop
 from research_council.core.orchestration.state import WorkflowState
 from research_council.schemas.models import (
     Evidence,
+    ModelExecution,
     NoveltyCandidate,
     NoveltyDecision,
+    Paper,
+    PaperMetadata,
     PriorArtReport,
     ReviewerReport,
     ReviewReason,
+    SearchAttempt,
+    SearchQuery,
     VerificationStatus,
 )
 
@@ -48,14 +53,45 @@ def test_novelty_gate_rejects_incomplete_and_severe_reviews():
     )
     decision = NoveltyDecision(candidate_id=candidate.candidate_id, revision=1, verdict="SURVIVE")
     gate = NoveltySurvivalGate(1)
-    assert gate.evaluate(candidate, [item], prior, review, decision).passed
+    paper = Paper(
+        paper_id=item.paper_id,
+        metadata=PaperMetadata(
+            title="Unit-test source",
+            authors=["Unit-test author"],
+            year=2024,
+            url="https://example.invalid/unit",
+            metadata_source="unit-test",
+            metadata_verified=True,
+        ),
+        source_text="Test",
+    )
+    prior.search_attempts = [
+        SearchAttempt(adapter="mock", query=SearchQuery(text="query"), status="SUCCESS")
+    ]
+    run_id = uuid4()
+    executions = [
+        ModelExecution(
+            run_id=run_id,
+            agent_id=role,
+            task="ADVERSARIAL_REVIEW",
+            provider="mock",
+            model="mock",
+            status="SUCCESS",
+            structured_output_valid=True,
+        )
+        for role in ("PriorArtHunter", "ReviewerTwo", "NoveltyJudge")
+    ]
+    prior.model_execution_id, review.model_execution_id, decision.model_execution_id = [
+        record.execution_id for record in executions
+    ]
+    assert gate.evaluate(candidate, [item], prior, review, decision, [paper], executions).passed
     review.reasons = [
         ReviewReason(category="contradiction", severity="HIGH", explanation="Unresolved")
     ]
-    assert not gate.evaluate(candidate, [item], prior, review, decision).passed
+    assert not gate.evaluate(candidate, [item], prior, review, decision, [paper], executions).passed
     review.reasons = []
     prior.complete = False
-    assert not gate.evaluate(candidate, [item], prior, review, decision).passed
+    assert not gate.evaluate(candidate, [item], prior, review, decision, [paper], executions).passed
 
 
 async def test_novelty_loop_terminates_and_searches_again():

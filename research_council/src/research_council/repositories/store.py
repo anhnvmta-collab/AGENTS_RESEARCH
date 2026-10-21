@@ -2,22 +2,29 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from contextvars import ContextVar
 from typing import Any, Protocol, TypeVar
 from uuid import UUID
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, insert, or_, select, update
 from sqlalchemy.engine import Connection, Engine
 
 from research_council.schemas.models import (
+    AgentExecution,
     Evidence,
+    Gap,
+    ModelExecution,
+    NoveltyCandidate,
     Paper,
     ResearchClaim,
     ResearchProject,
     ResearchRun,
     Schema,
     VerificationStatus,
+    utcnow,
 )
-from research_council.storage.database import tables
+from research_council.storage.database import runs, tables
+from research_council.storage.graph import record_id
 
 T = TypeVar("T", bound=Schema)
 
@@ -45,9 +52,116 @@ class ResearchRepository(Protocol):
     def create_run(self, project: ResearchProject, run: ResearchRun) -> None: ...
 
 
+class RunRepository(ResearchRepository, Protocol):
+    def save_run(self, run: ResearchRun) -> None: ...
+
+
+class GapRepository(Protocol):
+    def save_gap(self, gap: Gap, run_id: UUID) -> None: ...
+    def get_gap(self, gap_id: UUID, run_id: UUID) -> Gap | None: ...
+
+
+class NoveltyRepository(Protocol):
+    def save_candidate(self, candidate: NoveltyCandidate, run_id: UUID) -> None: ...
+    def get_candidate(
+        self, candidate_id: UUID, run_id: UUID, revision: int | None = None
+    ) -> NoveltyCandidate | None: ...
+
+
+class ExecutionRepository(Protocol):
+    def save_execution(self, execution: AgentExecution) -> None: ...
+    def list_model_executions(self, run_id: UUID) -> list[ModelExecution]: ...
+
+
+DOMAIN_TABLES = {
+    "evidence",
+    "claims",
+    "gaps",
+    "novelty_candidates",
+    "prior_art_matches",
+    "reviews",
+    "citation_audits",
+    "search_queries",
+    "quality_gate_results",
+}
+
+
 class SQLRepository:
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+        self._leases: ContextVar[dict[str, str] | None] = ContextVar(
+            "research_run_leases", default=None
+        )
+
+    def _assert_lease(self, connection: Connection, run_id: UUID) -> None:
+        row = connection.execute(
+            select(runs.c.lease_owner, runs.c.lease_until).where(runs.c.id == str(run_id))
+        ).first()
+        owner = (self._leases.get() or {}).get(str(run_id))
+        if row is None:
+            raise KeyError("Unknown research run")
+        now = utcnow().isoformat()
+        if owner and (row.lease_owner != owner or not row.lease_until or row.lease_until <= now):
+            raise RuntimeError("Stale run lease; checkpoint write refused")
+        if not owner and row.lease_owner and row.lease_until and row.lease_until > now:
+            raise RuntimeError("Run has an active lease owned by another operation")
+
+    def acquire_lease(self, run_id: UUID, owner: str, until: str) -> None:
+        with self.engine.begin() as connection:
+            result = connection.execute(
+                update(runs)
+                .where(
+                    runs.c.id == str(run_id),
+                    or_(runs.c.lease_owner.is_(None), runs.c.lease_until < utcnow().isoformat()),
+                )
+                .values(lease_owner=owner, lease_until=until)
+            )
+            if result.rowcount != 1:
+                raise RuntimeError("Research run is already owned by another worker")
+        self._leases.set({**(self._leases.get() or {}), str(run_id): owner})
+
+    def renew_lease(self, run_id: UUID, owner: str, until: str) -> None:
+        with self.engine.begin() as connection:
+            result = connection.execute(
+                update(runs)
+                .where(runs.c.id == str(run_id), runs.c.lease_owner == owner)
+                .values(lease_until=until)
+            )
+            if result.rowcount != 1:
+                raise RuntimeError("Research run lease was lost")
+
+    def release_lease(self, run_id: UUID, owner: str) -> None:
+        with self.engine.begin() as connection:
+            connection.execute(
+                update(runs)
+                .where(runs.c.id == str(run_id), runs.c.lease_owner == owner)
+                .values(lease_owner=None, lease_until=None)
+            )
+        self._leases.set(
+            {key: value for key, value in (self._leases.get() or {}).items() if key != str(run_id)}
+        )
+
+    def scientific_records(
+        self,
+        kind: str,
+        schema: type[T],
+        run_id: UUID | None = None,
+        identity: UUID | None = None,
+        revision: int | None = None,
+    ) -> list[T]:
+        table = tables["scientific_artifacts"]
+        query = select(table.c.payload).where(table.c.artifact_type == kind)
+        if run_id:
+            query = query.where(table.c.run_id == str(run_id))
+        if identity:
+            query = query.where(table.c.artifact_id == str(identity))
+        if revision is not None:
+            query = query.where(table.c.revision == revision)
+        with self.engine.connect() as connection:
+            payloads: Any = (
+                connection.execute(query.order_by(table.c.revision.desc())).scalars().all()
+            )
+        return [schema.model_validate(payload) for payload in payloads]
 
     def _put(
         self,
@@ -74,12 +188,37 @@ class SQLRepository:
         run_id: UUID | None = None,
         **fields: Any,
     ) -> None:
+        obj = obj.__class__.model_validate_json(obj.model_dump_json())
         if "run_id" in tables[table_name].c:
             fields["run_id"] = str(run_id) if run_id else None
         with self.engine.begin() as connection:
-            self._put(connection, table_name, str(identity), obj.model_dump(mode="json"), **fields)
+            if table_name == "research_runs":
+                self._assert_lease(connection, identity)
+            row_identity = (
+                record_id(run_id, table_name, identity, getattr(obj, "revision", 1))
+                if run_id and table_name in DOMAIN_TABLES
+                else identity
+            )
+            self._put(
+                connection, table_name, str(row_identity), obj.model_dump(mode="json"), **fields
+            )
+            if run_id and table_name in DOMAIN_TABLES:
+                self._put(
+                    connection,
+                    "scientific_artifacts",
+                    str(row_identity),
+                    obj.model_dump(mode="json"),
+                    run_id=str(run_id),
+                    artifact_type=table_name,
+                    artifact_id=str(identity),
+                    revision=getattr(obj, "revision", 1),
+                )
 
     def get(self, table_name: str, identity: UUID, schema: type[T]) -> T | None:
+        if table_name in DOMAIN_TABLES:
+            snapshots = self.scientific_records(table_name, schema, identity=identity)
+            if snapshots:
+                return snapshots[0]
         table = tables[table_name]
         with self.engine.connect() as connection:
             payload: Any = connection.execute(
@@ -88,6 +227,10 @@ class SQLRepository:
         return schema.model_validate(payload) if payload is not None else None
 
     def list_all(self, table_name: str, schema: type[T], run_id: UUID | None = None) -> list[T]:
+        if run_id and table_name in DOMAIN_TABLES:
+            snapshots = self.scientific_records(table_name, schema, run_id)
+            if snapshots:
+                return snapshots
         table = tables[table_name]
         query = select(table.c.payload)
         if run_id is not None:
@@ -158,13 +301,17 @@ class SQLRepository:
             "evidence", evidence.evidence_id, evidence, run_id, paper_id=str(evidence.paper_id)
         )
 
-    def get_evidence(self, evidence_id: UUID) -> Evidence | None:
+    def get_evidence(self, evidence_id: UUID, run_id: UUID | None = None) -> Evidence | None:
+        if run_id:
+            snapshots = self.scientific_records("evidence", Evidence, run_id, evidence_id)
+            return snapshots[0] if snapshots else None
         return self.get("evidence", evidence_id, Evidence)
 
     def save_claim(self, claim: ResearchClaim, run_id: UUID) -> None:
-        supports = [self.get_evidence(identity) for identity in claim.evidence_ids]
+        claim = ResearchClaim.model_validate_json(claim.model_dump_json())
+        supports = [self.get_evidence(identity, run_id) for identity in claim.evidence_ids]
         contradictions = [
-            self.get_evidence(identity) for identity in claim.contradicting_evidence_ids
+            self.get_evidence(identity, run_id) for identity in claim.contradicting_evidence_ids
         ]
         if any(item is None for item in supports + contradictions):
             raise ValueError("Claim references unknown evidence")
@@ -179,10 +326,51 @@ class SQLRepository:
             raise ValueError("Verified claim requires verified supporting evidence")
         self.save("claims", claim.claim_id, claim, run_id)
 
+    def save_gap(self, gap: Gap, run_id: UUID) -> None:
+        if any(self.get_evidence(identity, run_id) is None for identity in gap.evidence_ids):
+            raise ValueError("Gap references unknown run evidence")
+        if any(
+            not self.scientific_records("claims", ResearchClaim, run_id, identity)
+            for identity in gap.claim_ids
+        ):
+            raise ValueError("Gap references unknown run claims")
+        self.save("gaps", gap.gap_id, gap, run_id)
+
+    def get_gap(self, gap_id: UUID, run_id: UUID) -> Gap | None:
+        values = self.scientific_records("gaps", Gap, run_id, gap_id)
+        return values[0] if values else None
+
+    def save_candidate(self, candidate: NoveltyCandidate, run_id: UUID) -> None:
+        if any(self.get_gap(identity, run_id) is None for identity in candidate.gap_ids) or any(
+            self.get_evidence(identity, run_id) is None for identity in candidate.evidence_ids
+        ):
+            raise ValueError("Novelty candidate references unknown run artifacts")
+        self.save("novelty_candidates", candidate.candidate_id, candidate, run_id)
+
+    def get_candidate(
+        self, candidate_id: UUID, run_id: UUID, revision: int | None = None
+    ) -> NoveltyCandidate | None:
+        values = self.scientific_records(
+            "novelty_candidates", NoveltyCandidate, run_id, candidate_id, revision
+        )
+        return values[0] if values else None
+
+    def save_execution(self, execution: AgentExecution) -> None:
+        self.save(
+            "model_executions" if isinstance(execution, ModelExecution) else "agent_executions",
+            execution.execution_id,
+            execution,
+            execution.run_id,
+        )
+
+    def list_model_executions(self, run_id: UUID) -> list[ModelExecution]:
+        return self.list_all("model_executions", ModelExecution, run_id)
+
     def checkpoint(
         self, run: ResearchRun, artifacts: dict[str, Schema | list[Schema] | dict[str, Any]]
     ) -> None:
         with self.engine.begin() as connection:
+            self._assert_lease(connection, run.run_id)
             for name, value in artifacts.items():
                 if name == "state":
                     from research_council.core.orchestration.state import WorkflowState

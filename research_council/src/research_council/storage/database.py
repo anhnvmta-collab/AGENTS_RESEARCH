@@ -5,7 +5,19 @@ from typing import Any
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import JSON, Column, ForeignKey, MetaData, String, Table, create_engine, event
+from sqlalchemy import (
+    JSON,
+    Column,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    UniqueConstraint,
+    create_engine,
+    event,
+)
 from sqlalchemy.engine import Engine
 
 metadata = MetaData()
@@ -63,6 +75,35 @@ tables["artifacts"] = Table(
     Column("name", String(100), nullable=False),
     Column("payload", JSON, nullable=False),
 )
+tables["scientific_artifacts"] = Table(
+    "scientific_artifacts",
+    metadata,
+    Column("id", String(36), primary_key=True),
+    Column("run_id", String(36), ForeignKey("research_runs.id"), nullable=False, index=True),
+    Column("artifact_type", String(40), nullable=False),
+    Column("artifact_id", String(36), nullable=False),
+    Column("revision", Integer, nullable=False),
+    Column("payload", JSON, nullable=False),
+    UniqueConstraint(
+        "run_id", "artifact_type", "artifact_id", "revision", name="uq_scientific_identity"
+    ),
+    UniqueConstraint("id", "run_id", name="uq_scientific_run_identity"),
+)
+tables["scientific_links"] = Table(
+    "scientific_links",
+    metadata,
+    Column("id", String(36), primary_key=True),
+    Column("run_id", String(36), ForeignKey("research_runs.id"), nullable=False, index=True),
+    Column("source_id", String(36), nullable=False),
+    Column("target_id", String(36), nullable=False),
+    Column("relation", String(64), nullable=False),
+    ForeignKeyConstraint(
+        ["source_id", "run_id"], ["scientific_artifacts.id", "scientific_artifacts.run_id"]
+    ),
+    ForeignKeyConstraint(
+        ["target_id", "run_id"], ["scientific_artifacts.id", "scientific_artifacts.run_id"]
+    ),
+)
 
 
 def make_engine(url: str) -> Engine:
@@ -82,9 +123,17 @@ def make_engine(url: str) -> Engine:
     return engine
 
 
-def migrate(engine: Engine) -> None:
+def migrate(engine: Engine, revision: str = "head") -> None:
     config = Config()
     config.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
     with engine.begin() as connection:
         config.attributes["connection"] = connection
-        command.upgrade(config, "head")
+        command.upgrade(config, revision)
+
+
+def downgrade(engine: Engine, revision: str = "base") -> None:
+    config = Config()
+    config.set_main_option("script_location", str(Path(__file__).parent / "migrations"))
+    with engine.begin() as connection:
+        config.attributes["connection"] = connection
+        command.downgrade(config, revision)

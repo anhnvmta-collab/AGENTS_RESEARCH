@@ -8,14 +8,11 @@ from datetime import timedelta
 from typing import Protocol, TypeVar
 from uuid import UUID, uuid4
 
-from sqlalchemy import or_, update
-
 from research_council.core.config import Settings
 from research_council.core.orchestration.state import WorkflowState
 from research_council.core.tracing import TraceEvent, TraceSink
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import ResearchQuestion, ResearchRun, utcnow
-from research_council.storage.database import runs
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -56,43 +53,22 @@ class Stage:
 class RunLease:
     def __init__(self, repository: SQLRepository, run_id: UUID) -> None:
         self.repository = repository
-        self.run_id = str(run_id)
+        self.run_id = run_id
         self.owner = str(uuid4())
 
     def acquire(self) -> None:
-        now = utcnow().isoformat()
         until = (utcnow() + timedelta(seconds=45)).isoformat()
-        with self.repository.engine.begin() as connection:
-            result = connection.execute(
-                update(runs)
-                .where(
-                    runs.c.id == self.run_id,
-                    or_(runs.c.lease_owner.is_(None), runs.c.lease_until < now),
-                )
-                .values(lease_owner=self.owner, lease_until=until)
-            )
-            if result.rowcount != 1:
-                raise RuntimeError("Research run is already owned by another worker")
+        self.repository.acquire_lease(self.run_id, self.owner, until)
 
     async def heartbeat(self) -> None:
         while True:
             await asyncio.sleep(10)
-            with self.repository.engine.begin() as connection:
-                result = connection.execute(
-                    update(runs)
-                    .where(runs.c.id == self.run_id, runs.c.lease_owner == self.owner)
-                    .values(lease_until=(utcnow() + timedelta(seconds=45)).isoformat())
-                )
-                if result.rowcount != 1:
-                    raise RuntimeError("Research run lease was lost")
+            self.repository.renew_lease(
+                self.run_id, self.owner, (utcnow() + timedelta(seconds=45)).isoformat()
+            )
 
     def release(self) -> None:
-        with self.repository.engine.begin() as connection:
-            connection.execute(
-                update(runs)
-                .where(runs.c.id == self.run_id, runs.c.lease_owner == self.owner)
-                .values(lease_owner=None, lease_until=None)
-            )
+        self.repository.release_lease(self.run_id, self.owner)
 
 
 class WorkflowEngine:
@@ -109,7 +85,10 @@ class WorkflowEngine:
         self.trace = trace
 
     def load_state(self, run_id: UUID) -> WorkflowState:
-        return WorkflowState.model_validate(self.repository.artifacts(run_id).get("state", {}))
+        state = WorkflowState.model_validate(self.repository.artifacts(run_id).get("state", {}))
+        if state.schema_version != 1:
+            raise ValueError("Unsupported checkpoint state schema version")
+        return state
 
     async def resume(self, run_id: UUID) -> ResearchRun:
         lease = RunLease(self.repository, run_id)
@@ -162,6 +141,8 @@ class WorkflowEngine:
                     self.repository.checkpoint(run, {"state": self.load_state(run_id)})
                     raise
                 state = next_state
+                if heartbeat.done():
+                    await heartbeat
                 run.stage += 1
                 run.updated_at = utcnow()
                 self.repository.checkpoint(run, {"state": state})

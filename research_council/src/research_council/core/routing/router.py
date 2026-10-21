@@ -37,6 +37,7 @@ class ModelRouter:
         self.cost = sum(item.estimated_cost or 0 for item in prior)
         self.reserved = 0.0
         self.lock = asyncio.Lock()
+        self.last_success: dict[str, ModelExecution] = {}
 
     async def generate(
         self,
@@ -165,6 +166,7 @@ class ModelRouter:
                         "model_executions", execution.execution_id, execution, self.run_id
                     )
                 if result is not None:
+                    self.last_success[role] = execution
                     return result
                 if not retryable or attempt == limit:
                     break

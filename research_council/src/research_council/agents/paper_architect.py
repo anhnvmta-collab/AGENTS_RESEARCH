@@ -11,3 +11,11 @@ class PaperArchitect(BaseResearchAgent[PaperInput, PaperOutline]):
     input_schema = PaperInput
     output_schema = PaperOutline
     prompt_file = "paper_architect.md"
+
+    async def execute(self, value: PaperInput) -> PaperOutline:
+        output = await super().execute(value)
+        if not set(output.claim_ids).issubset({item.claim_id for item in value.claims}):
+            raise ValueError("Paper plan references unknown claims")
+        output.experiment_ids = [item.experiment_id for item in value.experiments]
+        output.claim_ids = [item.claim_id for item in value.claims]
+        return output

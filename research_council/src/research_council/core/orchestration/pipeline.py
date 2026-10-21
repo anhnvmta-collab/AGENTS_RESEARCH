@@ -384,7 +384,9 @@ class ResearchPipeline:
             result = await self.safe(
                 self.call(agents.GapMiner, value), GapsOutput(), state, "GapMiner"
             )
-            state.gaps = GapsOutput.model_validate(result).gaps
+            merged_gaps = {gap.gap_id: gap for gap in state.gaps}
+            merged_gaps.update({gap.gap_id: gap for gap in GapsOutput.model_validate(result).gaps})
+            state.gaps = list(merged_gaps.values())
         if run.mode == Mode.AUDIT and run.question.audit_claim and state.evidence:
             state.gaps = [
                 Gap(
@@ -424,16 +426,33 @@ class ResearchPipeline:
             operations,
             max_iterations=self.settings.research.max_novelty_iterations,
             minimum_evidence=self.settings.research.min_novelty_evidence,
+            execution_records=lambda: self.repository.list_model_executions(run.run_id),
         ).run(state, checkpoint)
 
     async def experiments(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
         passed = {
-            identity
+            (gate.candidate_id, gate.candidate_revision)
             for gate in state.gates
             if gate.gate == 2 and gate.passed
-            for identity in gate.checked_ids
         }
-        survivors = [item for item in state.novelty_candidates if item.candidate_id in passed]
+        latest = {
+            identity: max(
+                item.revision for item in state.novelty_candidates if item.candidate_id == identity
+            )
+            for identity in {item.candidate_id for item in state.novelty_candidates}
+        }
+        survivors = [
+            item
+            for item in state.novelty_candidates
+            if (item.candidate_id, item.revision) in passed
+            and item.revision == latest[item.candidate_id]
+            and any(
+                decision.candidate_id == item.candidate_id
+                and decision.revision == item.revision
+                and decision.verdict == "SURVIVE"
+                for decision in state.decisions
+            )
+        ]
         if run.mode == Mode.NOVELTY and not survivors:
             state.limitations.append(
                 "Experiment/paper design awaits a contribution that survives Gate 2."
@@ -496,6 +515,18 @@ class ResearchPipeline:
             state.audits,
             state.experiments,
             state.limitations,
+            conflicts=state.conflicts,
+            outline=state.outline,
+            novelty_candidates=[
+                item
+                for item in state.novelty_candidates
+                if any(
+                    decision.candidate_id == item.candidate_id
+                    and decision.revision == item.revision
+                    and decision.verdict == "SURVIVE"
+                    for decision in state.decisions
+                )
+            ],
         )
         if run.mode in (Mode.NOVELTY, Mode.AUDIT) and not any(
             item.gate == 2 and item.passed for item in state.gates

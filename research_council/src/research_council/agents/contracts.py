@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import Field
 
@@ -158,7 +158,10 @@ class PaperInput(AgentInput):
 
 
 class PaperOutline(Schema):
+    plan_id: UUID = Field(default_factory=uuid4)
     title: str = "Research roadmap — evidence acquisition required"
+    experiment_ids: list[UUID] = Field(default_factory=list)
+    claim_ids: list[UUID] = Field(default_factory=list)
     sections: dict[str, list[str]] = Field(default_factory=dict)
     limitations: list[str] = Field(default_factory=list)
 

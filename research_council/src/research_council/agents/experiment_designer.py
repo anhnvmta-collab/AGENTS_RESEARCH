@@ -11,3 +11,14 @@ class ExperimentDesigner(BaseResearchAgent[ExperimentInput, ExperimentPlan]):
     input_schema = ExperimentInput
     output_schema = ExperimentPlan
     prompt_file = "experiment_designer.md"
+
+    async def execute(self, value: ExperimentInput) -> ExperimentPlan:
+        output = await super().execute(value)
+        allowed = {item.candidate_id: item.revision for item in value.candidates}
+        if not set(output.candidate_ids).issubset(allowed):
+            raise ValueError("Experiment references unknown candidate")
+        output.candidate_ids = list(allowed)
+        output.candidate_revisions = allowed
+        output.gap_ids = [item.gap_id for item in value.gaps]
+        output.claim_ids = [item.claim_id for item in value.claims]
+        return output

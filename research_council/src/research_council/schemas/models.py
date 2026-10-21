@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -26,7 +26,18 @@ def normalize_doi(value: str | None) -> str | None:
 
 
 class Schema(BaseModel):
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(
+        extra="forbid", validate_assignment=True, allow_inf_nan=False, revalidate_instances="always"
+    )
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def normalize_timestamps(cls, value: Any) -> Any:
+        if isinstance(value, datetime):
+            if value.tzinfo is None or value.utcoffset() is None:
+                raise ValueError("Timestamps must be timezone-aware")
+            return value.astimezone(UTC)
+        return value
 
 
 class Mode(StrEnum):
@@ -153,6 +164,9 @@ class PaperMetadata(Schema):
     citation_count: int | None = Field(default=None, ge=0)
     quartile: Literal["Q1", "Q2", "Q3", "Q4"] | None = None
     quartile_source: str | None = None
+    quartile_year: int | None = Field(default=None, ge=1500, le=2200)
+    quartile_category: str | None = None
+    quartile_journal: str | None = None
     retracted: bool | None = None
     metadata_source: str
     metadata_verified: bool = False
@@ -162,8 +176,15 @@ class PaperMetadata(Schema):
 
     @model_validator(mode="after")
     def require_quartile_source(self) -> Self:
-        if self.quartile and not self.quartile_source:
-            raise ValueError("Quartile requires a supporting source")
+        if self.quartile and not all(
+            (
+                self.quartile_source,
+                self.quartile_year,
+                self.quartile_category,
+                self.quartile_journal or self.venue,
+            )
+        ):
+            raise ValueError("Quartile requires journal, year, category and supporting source")
         return self
 
 
@@ -240,6 +261,8 @@ class Evidence(Schema):
     agent_interpretation: str = ""
     extraction_agent: str
     provenance: Literal["live", "local", "fixture"] = "live"
+    source_sha256: str | None = None
+    chunk_id: UUID | None = None
     verification_status: VerificationStatus = VerificationStatus.UNVERIFIED
     confidence: Score = 0
     created_at: datetime = Field(default_factory=utcnow)
@@ -271,6 +294,42 @@ class ResearchClaim(Schema):
             raise ValueError("Derived claims require an explicit derivation")
         return self
 
+    @property
+    def supporting_evidence_ids(self) -> list[UUID]:
+        return list(self.evidence_ids)
+
+
+class ConflictSeverity(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+class ConflictResolution(StrEnum):
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+    UNRESOLVED = "UNRESOLVED"
+
+
+class EvidenceConflict(Schema):
+    conflict_id: UUID = Field(default_factory=uuid4)
+    claim_id: UUID
+    supporting: list[UUID] = Field(default_factory=list)
+    contradicting: list[UUID] = Field(min_length=1)
+    severity: ConflictSeverity = ConflictSeverity.HIGH
+    resolution_status: ConflictResolution = ConflictResolution.OPEN
+    resolution_note: str | None = None
+    resolved_by: str | None = None
+    created_at: datetime = Field(default_factory=utcnow)
+
+    @model_validator(mode="after")
+    def documented_resolution(self) -> Self:
+        if self.resolution_status == ConflictResolution.RESOLVED and not (
+            self.resolution_note and self.resolved_by
+        ):
+            raise ValueError("Conflict resolution requires a named reviewer and explanation")
+        return self
+
 
 class Gap(Schema):
     gap_id: UUID = Field(default_factory=uuid4)
@@ -296,6 +355,9 @@ class NoveltyCandidate(Schema):
     proposed_method: str
     validation_plan: str
     risk_level: RiskLevel = RiskLevel.BALANCED
+    generation_execution_id: UUID | None = None
+    generator_provider: str | None = None
+    novelty_claim_id: UUID | None = None
 
 
 class PriorArtMatch(Schema):
@@ -306,6 +368,9 @@ class PriorArtMatch(Schema):
     overlap: str
     invalidates: bool = False
     evidence_ids: list[UUID] = Field(default_factory=list)
+    candidate_revision: int = Field(default=1, ge=1)
+    overlap_components: dict[str, str] = Field(default_factory=dict)
+    severity: ConflictSeverity = ConflictSeverity.LOW
 
 
 class PriorArtReport(Schema):
@@ -317,6 +382,7 @@ class PriorArtReport(Schema):
     search_failures: list[str] = Field(default_factory=list)
     discovered_candidates: list[PaperCandidate] = Field(default_factory=list)
     search_attempts: list[SearchAttempt] = Field(default_factory=list)
+    model_execution_id: UUID | None = None
 
 
 class ReviewReason(Schema):
@@ -334,6 +400,9 @@ class ReviewerReport(Schema):
     complete: bool = False
     verdict: Literal["REJECT", "MAJOR_REVISION", "MINOR_REVISION", "SURVIVES"] = "MAJOR_REVISION"
     reasons: list[ReviewReason] = Field(default_factory=list)
+    provider: str | None = None
+    model_execution_id: UUID | None = None
+    provider_independence: str = "UNKNOWN"
 
 
 class NoveltyDecision(Schema):
@@ -345,6 +414,7 @@ class NoveltyDecision(Schema):
     closest_prior_art: list[UUID] = Field(default_factory=list)
     required_followup_searches: list[str] = Field(default_factory=list)
     remaining_risks: list[str] = Field(default_factory=list)
+    model_execution_id: UUID | None = None
 
 
 class HardwareAssessment(Schema):
@@ -356,12 +426,18 @@ class HardwareAssessment(Schema):
     justification: str = "Insufficient verified implementation parameters."
     parameters: dict[str, str | float | None] = Field(default_factory=dict)
     unknowns: list[str] = Field(default_factory=list)
+    measurement_status: Literal["ESTIMATED", "MEASURED", "UNKNOWN"] = "UNKNOWN"
+    parameter_evidence: dict[str, list[UUID]] = Field(default_factory=dict)
 
 
 class ExperimentPlan(Schema):
     experiment_id: UUID = Field(default_factory=uuid4)
     objective: str = "Validate a hypothesis; no measured results available."
     candidate_ids: list[UUID] = Field(default_factory=list)
+    candidate_revisions: dict[UUID, int] = Field(default_factory=dict)
+    gap_ids: list[UUID] = Field(default_factory=list)
+    claim_ids: list[UUID] = Field(default_factory=list)
+    hypothesis: str = ""
     baselines: list[str] = Field(default_factory=list)
     metrics: list[str] = Field(default_factory=list)
     datasets: list[str] = Field(default_factory=list)
@@ -370,6 +446,9 @@ class ExperimentPlan(Schema):
     statistical_plan: str = ""
     reproducibility: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    progression: list[str] = Field(default_factory=list)
+    failure_cases: list[str] = Field(default_factory=list)
+    acceptance_criteria: list[str] = Field(default_factory=list)
 
 
 class CitationAudit(Schema):
@@ -414,6 +493,8 @@ class QualityGateResult(Schema):
     reasons: list[str] = Field(default_factory=list)
     checked_ids: list[UUID] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=utcnow)
+    candidate_id: UUID | None = None
+    candidate_revision: int | None = Field(default=None, ge=1)
 
 
 class LiteratureRow(Schema):
@@ -429,3 +510,6 @@ class ResearchKnowledgeMap(Schema):
     claim_ids: list[UUID] = Field(default_factory=list)
     gap_ids: list[UUID] = Field(default_factory=list)
     coverage_score: Score = 0
+
+
+ResearchGap = Gap

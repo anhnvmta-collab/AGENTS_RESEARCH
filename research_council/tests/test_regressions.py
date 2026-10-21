@@ -12,6 +12,7 @@ from research_council.core.routing import BudgetExceeded, ModelRouter
 from research_council.providers.base import ProviderError
 from research_council.providers.fake import FakeProvider
 from research_council.schemas.models import (
+    CitationAudit,
     ClaimType,
     Evidence,
     ExperimentPlan,
@@ -137,7 +138,7 @@ def human_ready_state():
         evidence_ids=[evidence.evidence_id],
         source_paper_ids=[paper.paper_id],
     )
-    return WorkflowState(
+    state = WorkflowState(
         candidates=[PaperCandidate(paper=paper)],
         evidence=[evidence],
         claims=[claim],
@@ -149,6 +150,17 @@ def human_ready_state():
         limitations=["Unit test only."],
         pending_approval="before_final_report",
     )
+    state.experiments[0].hypothesis = "Unit-test hypothesis"
+    state.experiments[0].ablations = ["Unit-test ablation"]
+    state.experiments[0].acceptance_criteria = ["Pre-registered criterion"]
+    state.experiments[0].failure_cases = ["Insufficient source evidence"]
+    state.experiments[0].statistical_plan = "Paired confidence intervals"
+    state.experiments[0].reproducibility = ["Record seeds and versions"]
+    state.experiments[0].claim_ids = [claim.claim_id]
+    state.outline.experiment_ids = [state.experiments[0].experiment_id]
+    state.outline.claim_ids = [claim.claim_id]
+    state.outline.sections = {"Evaluation": ["Unit-test experiment"]}
+    return state
 
 
 def test_explicit_human_attestation_and_claim_specific_gate(repository):
@@ -184,6 +196,7 @@ def test_human_cannot_promote_fixture_publication(repository):
     repo, run = repository
     state = human_ready_state()
     state.candidates[0].paper.provenance = "fixture"
+    state.evidence[0].provenance = "fixture"
     run.status = "PAUSED"
     repo.checkpoint(run, {"state": state})
     attestation = ScientificAttestation(
@@ -197,3 +210,56 @@ def test_human_cannot_promote_fixture_publication(repository):
     )
     with pytest.raises(ValueError, match="Synthetic"):
         attest_claim(repo, run.run_id, attestation)
+
+
+def test_human_confidence_cannot_hide_a_contradicted_audit(repository):
+    repo, run = repository
+    state = human_ready_state()
+    run.status = "PAUSED"
+    state.audits = [
+        CitationAudit(
+            paper_id=state.candidates[0].paper.paper_id,
+            claim_ids=[state.claims[0].claim_id],
+            status=VerificationStatus.CONTRADICTED,
+            checks={"title": False},
+        )
+    ]
+    repo.checkpoint(run, {"state": state})
+    attestation = ScientificAttestation(
+        claim_id=state.claims[0].claim_id,
+        reviewer="Unit reviewer",
+        note="Confidence cannot override an unresolved source identity conflict.",
+        source_identity_checked=True,
+        source_locations_checked=True,
+        scientific_entailment_checked=True,
+        retraction_status_checked=True,
+    )
+    with pytest.raises(ValueError, match="conflict"):
+        attest_claim(repo, run.run_id, attestation)
+    assert repo.artifacts(run.run_id)["state"]["audits"][0]["status"] == "CONTRADICTED"
+
+
+async def test_citation_auditor_marks_missing_claim_support_unverified():
+    from research_council.agents.contracts import AuditInput
+    from research_council.tools.audit import CitationAuditService
+
+    state = human_ready_state()
+    state.candidates[0].paper.metadata.doi = "10.1234/unit"
+    state.claims[0].evidence_ids = [uuid4()]
+
+    class Resolver:
+        name = "unit_resolver"
+
+        async def resolve(self, doi):
+            return state.candidates[0].paper.metadata
+
+    output = await CitationAuditService([Resolver()], asyncio.Semaphore(1)).audit(
+        AuditInput(
+            task="test unsupported claim",
+            papers=[item.paper for item in state.candidates],
+            evidence=state.evidence,
+            claims=state.claims,
+        )
+    )
+    assert output.audits[0].status == VerificationStatus.UNVERIFIED
+    assert output.audits[0].checks["claim_support_present"] is False
