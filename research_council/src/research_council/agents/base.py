@@ -28,11 +28,16 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
     prompt_file: ClassVar[str]
 
     def __init__(
-        self, router: ModelRouter, tools: ToolRegistry | None = None, trace: TraceSink | None = None
+        self,
+        router: ModelRouter,
+        tools: ToolRegistry | None = None,
+        trace: TraceSink | None = None,
+        avoid_provider: str | None = None,
     ) -> None:
         self.router = router
         self.tools = tools or ToolRegistry()
         self.trace = trace
+        self.avoid_provider = avoid_provider
 
     def validate_input(self, value: InputT) -> InputT:
         return self.input_schema.model_validate(value.model_dump())
@@ -56,6 +61,7 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
             self.output_schema,
             retries=min(self.max_retries, self.router.settings.retries),
             timeout_seconds=min(self.timeout, self.router.settings.timeout_seconds),
+            avoid_provider=self.avoid_provider,
         )
 
     async def run(self, value: InputT) -> OutputT:

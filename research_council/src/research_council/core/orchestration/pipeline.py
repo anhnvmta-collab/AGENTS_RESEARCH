@@ -97,8 +97,15 @@ class ResearchPipeline:
             state.warnings.append(f"{role} incomplete: {type(exc).__name__}")
             return default
 
-    async def call(self, agent_type: type[BaseResearchAgent], value: Schema) -> Schema:
-        return await self.concurrency.agent(lambda: self.agent(agent_type).run(value))
+    async def call(
+        self,
+        agent_type: type[BaseResearchAgent],
+        value: Schema,
+        *,
+        avoid_provider: str | None = None,
+    ) -> Schema:
+        agent = agent_type(self.router, self.tools, self.trace, avoid_provider=avoid_provider)
+        return await self.concurrency.agent(lambda: agent.run(value))
 
     def stages(self, mode: Mode) -> list[Stage]:
         if mode == Mode.QUICK:
@@ -602,7 +609,9 @@ class PipelineNoveltyOperations:
     async def review(self, candidate: NoveltyCandidate, state: WorkflowState) -> ReviewerReport:
         return ReviewerReport.model_validate(
             await self.pipeline.call(
-                agents.ReviewerTwo, independent_review(candidate, state.evidence)
+                agents.ReviewerTwo,
+                independent_review(candidate, state.evidence),
+                avoid_provider=candidate.generator_provider,
             )
         )
 

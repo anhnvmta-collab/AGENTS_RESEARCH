@@ -21,4 +21,8 @@ class NoveltyGenerator(BaseResearchAgent[NoveltyInput, NoveltyOutput]):
                 candidate.evidence_ids
             ).issubset(evidence):
                 raise ValueError("Novelty proposal references unknown artifacts")
+            execution = self.router.last_success.get(self.name)
+            if execution:
+                candidate.generator_provider = execution.provider
+                candidate.generation_execution_id = execution.execution_id
         return output

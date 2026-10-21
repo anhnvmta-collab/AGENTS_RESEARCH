@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from research_council.core.retry import retry_after_seconds
 from research_council.providers.base import (
     BaseLLMProvider,
     LLMRequest,
@@ -33,17 +34,15 @@ class HTTPProvider(BaseLLMProvider):
         except (httpx.TimeoutException, httpx.NetworkError) as exc:
             raise ProviderError(retryable=True) from exc
         if response.is_error:
-            retry_after: float | None = None
-            try:
-                retry_after = min(60, max(0, float(response.headers.get("retry-after", "0"))))
-            except ValueError:
-                pass
+            retry_after = retry_after_seconds(response.headers.get("retry-after"))
             raise ProviderError(
                 retryable=response.status_code == 429 or response.status_code >= 500,
                 retry_after=retry_after,
             )
         try:
             result: dict[str, Any] = response.json()
+            if not isinstance(result, dict):
+                raise ValueError("Provider response must be a JSON object")
             return result
         except ValueError as exc:
             raise ProviderError(retryable=True) from exc

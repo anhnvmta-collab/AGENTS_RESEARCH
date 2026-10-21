@@ -50,7 +50,7 @@ def create_run(
     demo: bool = False,
     live: bool = False,
 ) -> ResearchRun:
-    configured = {route.provider for routes in settings.models.values() for route in routes}
+    configured = {route.provider for routes in settings.route_groups() for route in routes}
     if demo and live:
         raise ValueError("Choose either --demo or --live")
     if not live and configured - {"fake"}:
@@ -67,7 +67,7 @@ def create_run(
             "anthropic": "ANTHROPIC_API_KEY",
             "google": "GOOGLE_API_KEY",
         }
-        for routes in settings.models.values():
+        for routes in settings.route_groups():
             for route in routes:
                 if route.provider == "fake":
                     continue

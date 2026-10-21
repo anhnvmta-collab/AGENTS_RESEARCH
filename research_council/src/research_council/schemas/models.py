@@ -484,6 +484,7 @@ class ModelExecution(AgentExecution):
     structured_output_valid: bool = False
     human_evaluation_score: Score | None = None
     cost_basis: str = "usage"
+    routing_note: str | None = None
 
 
 class QualityGateResult(Schema):

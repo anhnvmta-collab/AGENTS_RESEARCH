@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
 from pathlib import Path
 
 import yaml
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from research_council.schemas.models import Schema, TaskProfile
 
@@ -48,9 +50,19 @@ class Settings(Schema):
     models: dict[TaskProfile, list[Route]] = Field(
         default_factory=lambda: {profile: [Route()] for profile in TaskProfile}
     )
+    role_routes: dict[str, list[Route]] = Field(default_factory=dict)
     retries: int = Field(default=2, ge=0, le=5)
     timeout_seconds: float = Field(default=60, gt=0, le=600)
     retry_base_seconds: float = Field(default=0.5, ge=0, le=30)
+
+    @model_validator(mode="after")
+    def complete_routes(self) -> Settings:
+        for profile in TaskProfile:
+            self.models.setdefault(profile, [Route()])
+        return self
+
+    def route_groups(self) -> list[list[Route]]:
+        return [*self.models.values(), *self.role_routes.values()]
 
     def fingerprint(self) -> str:
         return hashlib.sha256(
@@ -62,4 +74,69 @@ def load_settings(path: Path | None = None) -> Settings:
     if path is None:
         return Settings()
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(raw or {}, dict):
+        raise ValueError("Configuration must be a mapping")
+    raw = raw or {}
+    role_names = {
+        name.replace("_", "").lower(): name
+        for name in (
+            "ResearchDirector",
+            "ResearchPlanner",
+            "PerspectiveGenerator",
+            "QueryPlanner",
+            "PaperScout",
+            "CitationScout",
+            "LocalDocumentScout",
+            "PaperTriage",
+            "DeepReader",
+            "MathDSPAnalyst",
+            "HardwareArchitect",
+            "GapMiner",
+            "NoveltyGenerator",
+            "PriorArtHunter",
+            "ReviewerTwo",
+            "NoveltyJudge",
+            "ExperimentDesigner",
+            "PaperArchitect",
+            "CitationAuditor",
+            "FinalSynthesizer",
+        )
+    }
+    role_names.update(
+        director="ResearchDirector", planner="ResearchPlanner", reviewer="ReviewerTwo"
+    )
+    profiles: dict[str, object] = {}
+    roles = dict(raw.get("role_routes", {}))
+    for name, routes in raw.get("models", {}).items():
+        if name in TaskProfile.__members__:
+            profiles[name] = routes if isinstance(routes, list) else [routes]
+        else:
+            canonical = role_names.get(name.replace("_", "").lower())
+            if not canonical:
+                raise ValueError(f"Unknown routing task or role: {name}")
+            roles[canonical] = routes if isinstance(routes, list) else [routes]
+    raw["models"], raw["role_routes"] = profiles, roles
+    for routes in [*profiles.values(), *roles.values()]:
+        if not isinstance(routes, list):
+            raise ValueError("Routing entries must be lists")
+        for route in routes:
+            if not isinstance(route, dict):
+                raise ValueError("Route must be a mapping")
+            model = route.get("model", "offline")
+            if isinstance(model, str) and "${" in model:
+
+                def replace_variable(match: re.Match[str]) -> str:
+                    name = match.group(1)
+                    if not name.endswith(("_MODEL", "_MODEL_ID")):
+                        raise ValueError(
+                            "Only model-ID environment variables may appear in model configuration"
+                        )
+                    value = os.environ.get(name)
+                    if not value:
+                        raise ValueError(f"Missing model-ID environment variable: {name}")
+                    return value
+
+                route["model"] = re.sub(r"\$\{([A-Z][A-Z0-9_]*)\}", replace_variable, model)
+                if "${" in route["model"]:
+                    raise ValueError("Invalid model-ID environment placeholder")
     return Settings.model_validate(raw or {})

@@ -20,6 +20,10 @@ class ReviewerTwo(BaseResearchAgent[ReviewInput, ReviewerReport]):
         if any(not set(reason.evidence_ids).issubset(known) for reason in report.reasons):
             raise ValueError("Reviewer references unknown evidence")
         report.complete = True
+        execution = self.router.last_success.get(self.name)
+        if execution:
+            report.provider = execution.provider
+            report.provider_independence = execution.routing_note or "UNKNOWN"
         for reason in report.reasons:
             reason.resolved = False
         return report

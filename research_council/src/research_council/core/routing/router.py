@@ -49,8 +49,20 @@ class ModelRouter:
         *,
         retries: int | None = None,
         timeout_seconds: float | None = None,
+        avoid_provider: str | None = None,
     ) -> T:
-        routes = self.settings.models.get(profile, [])
+        routes = list(self.settings.role_routes.get(role, self.settings.models.get(profile, [])))
+        if role == "ReviewerTwo" and avoid_provider:
+            routes.sort(
+                key=lambda route: (
+                    (
+                        self.providers[route.provider].name
+                        if route.provider in self.providers
+                        else route.provider
+                    )
+                    == avoid_provider
+                )
+            )
         if not routes:
             raise ValueError(f"No route for {profile}")
         last_error: Exception | None = None
@@ -90,6 +102,12 @@ class ModelRouter:
                     model=route.model,
                     retry_count=attempt,
                 )
+                if role == "ReviewerTwo" and avoid_provider:
+                    execution.routing_note = (
+                        "DIFFERENT_PROVIDER_PREFERRED"
+                        if provider.name != avoid_provider
+                        else "SAME_PROVIDER_FALLBACK"
+                    )
                 execution.estimated_cost = reservation
                 execution.cost_basis = (
                     "known_free" if provider.name == "fake" else "reserved_upper_bound"
