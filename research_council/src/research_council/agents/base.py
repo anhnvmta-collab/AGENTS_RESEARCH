@@ -57,12 +57,15 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
             self.task_profile,
             self.name,
             self.prompt(),
-            build_context(value),
+            self.build_context(value),
             self.output_schema,
             retries=min(self.max_retries, self.router.settings.retries),
             timeout_seconds=min(self.timeout, self.router.settings.timeout_seconds),
             avoid_provider=self.avoid_provider,
         )
+
+    def build_context(self, value: InputT) -> str:
+        return build_context(value, role=self.name)
 
     async def run(self, value: InputT) -> OutputT:
         started = perf_counter()
