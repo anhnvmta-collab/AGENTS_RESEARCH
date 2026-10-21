@@ -34,6 +34,12 @@ cannot authorize unrelated claims. Novelty runs still require Gate 2.
 This is a local trusted-user interface, not an authenticated multi-user review service. It
 records the reviewer's attestation; it cannot establish that a person actually read a source.
 
+For Phase 11 scientific benchmark runs, `attest-claim` also accepts the `after_gaps` pause.
+This lets the expert review source premises before the novelty attack loop. Identity conflicts,
+retractions, fixtures and hypotheses remain blocked. Approval still grants workflow permission
+separately. Use `validate-science --resume RUN_ID --live --confirm-paid-apis` to continue the
+scientific workflow and refresh its reports. See [Phase 11 operator instructions](PHASE_11_VALIDATION.md).
+
 ## Evidence conflict review
 
 While a run is paused, inspect both supporting and contradicting quotations. Create a

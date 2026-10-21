@@ -81,3 +81,21 @@ unless both --live and --confirm-paid-apis are present. SRL remains zero until e
 advancement. Partial/failed/paused live execution can be resumed and reviewed without inventing
 results. Checks: formatter/lint/mypy passed (99 source files); 151 offline tests passed, 0 failed;
 2 live tests deselected. Primary curation sources are linked in the benchmark README/seed file.
+
+## 11J final validation and operator documentation
+Completed the scientific review path: named claim attestation at the scientific after_gaps
+pause retains identity/conflict gates; source-specific prior-art quotes survive dedup only
+when the retained snapshot grounds them; all four candidate risk classes remain represented;
+expert disagreement resolutions retain both original model positions. Added eight regressions.
+CI explicitly excludes live tests. Operator instructions, A–V software acceptance and known
+scientific limits are in docs/PHASE_11_VALIDATION.md. Final checks: formatter/lint/mypy pass
+(100 source files), 159 offline tests pass, zero fail, two live tests deselected. The original
+113 tests remain unchanged and passing. Installed-wheel preparation and hash-verified exports
+are archived in docs/audits/phase11-prepared with machine evidence in phase11-results.json.
+
+Final scientific status: PHASE_11_IMPLEMENTED / LIVE_VALIDATION_NOT_YET_EXECUTED / SRL-0.
+No paid/live benchmark calls were made. Public primary-source seed curation is distinguished
+from benchmark execution. Missing human judgments and unexecuted coverage remain null; no
+scientific findings, measured hardware performance or surviving novelty are fabricated.
+The branch is phase-11-live-validation; final remote SHA is verified after push and reported
+to the operator. Actual model billing remains unknown; estimated model spend for preparation is zero.

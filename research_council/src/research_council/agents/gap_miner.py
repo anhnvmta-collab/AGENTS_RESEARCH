@@ -28,8 +28,10 @@ class GapMiner(BaseResearchAgent[GapInput, GapsOutput]):
                 raise ValueError("Unbounded absence claim")
             gap.search_scope = value.search_scope
             if self.router.settings.science_benchmark:
-                if not gap.potential_counterexample:
-                    raise ValueError("Scientific gaps require an explicit potential counterexample")
+                if not gap.potential_counterexample or not gap.known_prior_approaches:
+                    raise ValueError(
+                        "Scientific gaps require known prior approaches and a potential counterexample"
+                    )
                 if not set(gap.known_prior_approaches).issubset(
                     {paper.paper_id for paper in value.papers}
                 ):

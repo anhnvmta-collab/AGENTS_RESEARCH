@@ -774,9 +774,12 @@ class PipelineNoveltyOperations:
             state,
             "NoveltyGenerator",
         )
-        candidates = NoveltyOutput.model_validate(result).candidates[
-            : 4 if self.pipeline.settings.science_benchmark else 3
-        ]
+        proposed = NoveltyOutput.model_validate(result).candidates
+        candidates = (
+            [next(item for item in proposed if item.risk_level == risk) for risk in RiskLevel]
+            if self.pipeline.settings.science_benchmark and proposed
+            else proposed[:3]
+        )
         if self.pipeline.settings.science_benchmark and iteration == 1 and state.evidence:
             from research_council.validation.benchmark import load_benchmark
 
@@ -858,9 +861,21 @@ class PipelineNoveltyOperations:
         review: ReviewerReport,
         state: WorkflowState,
     ) -> NoveltyDecision:
+        original_prior_papers = [
+            item.paper.model_copy(deep=True) for item in prior_art.discovered_candidates
+        ]
         state.candidates = self.pipeline._canonicalize(
             state.candidates + prior_art.discovered_candidates
         )
+        if self.pipeline.settings.science_benchmark:
+            from research_council.validation.identity import retain_identity_observations
+            from research_council.validation.prior_art import merge_prior_art_sources
+
+            retain_identity_observations(
+                state.identity_observations,
+                [PaperCandidate(paper=paper) for paper in original_prior_papers],
+            )
+            merge_prior_art_sources(prior_art, original_prior_papers, state)
         state.search_history.extend(prior_art.search_attempts)
         existing_query_ids = {query.query_id for query in state.queries}
         for attempt in prior_art.search_attempts:
@@ -871,7 +886,11 @@ class PipelineNoveltyOperations:
             task="Decide novelty without averaging scores",
             candidate=candidate,
             evidence=[
-                item for item in state.evidence if item.evidence_id in candidate.evidence_ids
+                item
+                for item in state.evidence
+                if item.evidence_id in candidate.evidence_ids
+                or item.evidence_id
+                in {identity for match in prior_art.matches for identity in match.evidence_ids}
             ],
             prior_art=prior_art.model_copy(update={"discovered_candidates": []}),
             review=review,

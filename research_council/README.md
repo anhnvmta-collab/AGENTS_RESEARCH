@@ -181,3 +181,20 @@ V1 is a single-user local CLI. Native incremental token streaming, OCR, licensed
 retrieval, authoritative quartile feeds, adaptive routing, distributed workers and authenticated
 multi-user deployment remain future integrations. Source snapshots are reused to preserve
 evidence reproducibility; automatic source refresh/version migration is not included.
+
+## Phase 11 scientific validation
+
+Phase 11 extends the offline baseline with the CS_FHSS_DOA_FPGA benchmark, identity/coverage
+and evidence metrics, bounded live budgets, expert review exports, model disagreement and
+evidence-backed scientific readiness. Start with preparation only:
+
+```powershell
+research-council validate-science --workspace workspace/phase11-prepare
+```
+
+Status: **PHASE_11_IMPLEMENTED / LIVE_VALIDATION_NOT_YET_EXECUTED / SRL-0**.
+159 offline tests pass; two live tests are excluded by default and in CI. No paid benchmark
+was run. See the [operator guide and A–V acceptance](docs/PHASE_11_VALIDATION.md),
+[phase report](docs/phases/phase-11.md) and [generated preparation report](LIVE_SCIENTIFIC_VALIDATION.md).
+Live execution requires both `--live --confirm-paid-apis` and an operator-configured model/pricing
+file. Credentials alone do not authorize it. Existing Phase 0–10 audit results remain historical.

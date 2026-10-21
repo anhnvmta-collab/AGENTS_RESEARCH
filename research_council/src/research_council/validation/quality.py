@@ -143,7 +143,8 @@ def sample_real_evidence(
 ) -> list[Evidence]:
     real = {paper.paper_id for paper in papers if paper.provenance != "fixture"}
     eligible = sorted(
-        (item for item in evidence if item.paper_id in real), key=lambda item: str(item.evidence_id)
+        (item for item in evidence if item.paper_id in real and item.provenance != "fixture"),
+        key=lambda item: str(item.evidence_id),
     )
     return random.Random(seed).sample(eligible, min(sample_size, len(eligible)))
 

@@ -32,13 +32,25 @@ def attest_claim(
     lease.acquire()
     try:
         run = repository.get_run(run_id)
-        state = WorkflowState.model_validate(repository.artifacts(run_id).get("state", {}))
-        if run.status != "PAUSED" or state.pending_approval != "before_final_report":
-            raise ValueError("Scientific attestation requires the before_final_report pause point")
+        artifacts = repository.artifacts(run_id)
+        settings = Settings.model_validate(artifacts.get("settings", {}))
+        state = WorkflowState.model_validate(artifacts.get("state", {}))
+        allowed_pauses = {"before_final_report"}
+        if settings.science_benchmark:
+            allowed_pauses.add("after_gaps")
+        if run.status != "PAUSED" or state.pending_approval not in allowed_pauses:
+            raise ValueError(
+                "Scientific attestation requires before_final_report, or after_gaps for a scientific benchmark"
+            )
         claim = next((item for item in state.claims if item.claim_id == attestation.claim_id), None)
         if claim is None or not claim.evidence_ids or claim.claim_type == "HYPOTHESIS":
             raise ValueError("Claim cannot be attested without resolved source evidence")
         papers = {item.paper.paper_id: item.paper for item in state.candidates}
+        if any(
+            audit.paper_id in claim.source_paper_ids and audit.conflicts
+            for audit in state.identity_audits
+        ):
+            raise ValueError("Unresolved paper identity conflict blocks scientific attestation")
         if unresolved_conflict(claim, state.conflicts) or any(
             citation_conflict_open(audit, claim, state.conflicts)
             and (claim.claim_id in audit.claim_ids or audit.paper_id in claim.source_paper_ids)
@@ -83,9 +95,7 @@ def attest_claim(
             state,
             repository.list_model_executions(run_id),
             require_novelty=run.mode in (Mode.NOVELTY, Mode.AUDIT),
-            minimum_evidence=Settings.model_validate(
-                repository.artifacts(run_id).get("settings", {})
-            ).research.min_novelty_evidence,
+            minimum_evidence=settings.research.min_novelty_evidence,
         )
         state.gates.append(gate)
         repository.save("approvals", uuid4(), attestation, run_id)

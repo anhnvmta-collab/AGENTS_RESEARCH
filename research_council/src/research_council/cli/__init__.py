@@ -290,7 +290,7 @@ def attest_claim_command(
     attestation: Annotated[str, typer.Option(help="Workspace-relative JSON attestation file.")],
     workspace: WorkspaceOption = Path("workspace"),
 ) -> None:
-    """Record explicit human source/entailment/retraction review at the final pause."""
+    """Record explicit source/entailment review at the final or scientific after-gaps pause."""
     from research_council.core.human_review import ScientificAttestation, attest_claim
     from research_council.core.security import workspace_path
 

@@ -445,6 +445,8 @@ class PriorArtReport(Schema):
     discovered_candidates: list[PaperCandidate] = Field(default_factory=list)
     search_attempts: list[SearchAttempt] = Field(default_factory=list)
     model_execution_id: UUID | None = None
+    discovered_evidence: list[Evidence] = Field(default_factory=list)
+    citation_observations: list[CitationObservation] = Field(default_factory=list)
 
 
 class ReviewReason(Schema):

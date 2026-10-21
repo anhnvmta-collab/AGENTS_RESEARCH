@@ -45,6 +45,7 @@ from research_council.validation.readiness import (
 from research_council.validation.report import render_validation_report
 from research_council.validation.reviews import (
     HumanReviewBundle,
+    apply_disagreement_resolutions,
     readiness_facts,
     validate_human_reviews,
 )
@@ -103,7 +104,6 @@ def finalize_validation(
         if human_reviews:
             bundle, metadata.review_bundle_sha256 = load_review_file(workspace, human_reviews)
             validate_human_reviews(bundle, state, executions)
-            repository.checkpoint(run, {"scientific_human_reviews": bundle})
         if bundle:
             validate_human_reviews(bundle, state, executions)
         observed = novelty_disagreements(state, executions)
@@ -118,6 +118,9 @@ def finalize_validation(
             for item in observed
             if (item.subject_id, item.task, item.execution_A, item.execution_B) not in known
         )
+        if bundle:
+            apply_disagreement_resolutions(bundle, state)
+            repository.checkpoint(run, {"scientific_human_reviews": bundle})
         actual_calls = [item for item in executions if item.provider != "fake"]
         if run.provenance == "live" and (actual_calls or state.search_history):
             metadata.live_status = (
@@ -492,7 +495,13 @@ def review_readiness(
             record = advance_readiness(
                 record,
                 proof,
-                readiness_facts(run, state, executions, bundle),
+                readiness_facts(
+                    run,
+                    state,
+                    executions,
+                    bundle,
+                    settings_for_run(repository, run_id).research.min_novelty_evidence,
+                ),
                 available,
                 hashlib.sha256(source.read_bytes()).hexdigest(),
             )

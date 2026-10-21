@@ -53,7 +53,16 @@ class PriorArtHunter(BaseResearchAgent[ReviewInput, PriorArtReport]):
             discovered.candidates.extend(chained.candidates)
             discovered.attempts.extend(chained.attempts)
             discovered.failures.extend(chained.failures)
+            discovered.citation_observations.extend(chained.citation_observations)
         isolated = value.model_copy(deep=True)
+        source_evidence = []
+        if self.router.settings.science_benchmark:
+            from research_council.validation.prior_art import prior_art_quotes
+
+            source_evidence = prior_art_quotes(
+                [item.paper for item in discovered.candidates], value.normalized_claim
+            )
+            isolated.evidence.extend(source_evidence)
         isolated.prior_art_papers = [
             item.paper.model_copy(update={"source_text": None, "page_texts": {}})
             for item in discovered.candidates[:20]
@@ -67,6 +76,19 @@ class PriorArtHunter(BaseResearchAgent[ReviewInput, PriorArtReport]):
             for match in report.matches
         ):
             raise ValueError("Prior-art report references undiscovered work")
+        if self.router.settings.science_benchmark:
+            known = {item.evidence_id: item for item in isolated.evidence}
+            if any(
+                not match.evidence_ids
+                or any(
+                    identity not in known or known[identity].paper_id != match.paper_id
+                    for identity in match.evidence_ids
+                )
+                for match in report.matches
+            ):
+                raise ValueError("Prior-art overlap requires retrieved source-specific evidence")
+        report.discovered_evidence = source_evidence
+        report.citation_observations = discovered.citation_observations
         report.complete = (
             not discovered.failures
             and bool(discovered.attempts)

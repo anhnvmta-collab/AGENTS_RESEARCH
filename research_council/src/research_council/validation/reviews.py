@@ -38,6 +38,7 @@ class HumanReviewBundle(Schema):
     novelty_reviews: list[ExpertNoveltyReview] = Field(default_factory=list)
     model_scores: list[ModelHumanScore] = Field(default_factory=list)
     model_positions: list[ModelPosition] = Field(default_factory=list)
+    disagreement_resolutions: dict[UUID, str] = Field(default_factory=dict)
 
 
 def validate_human_reviews(
@@ -60,6 +61,29 @@ def validate_human_reviews(
         bundle.claim_support_labels,
     )
     detect_disagreements(bundle.model_positions, executions)
+
+
+def apply_disagreement_resolutions(bundle: HumanReviewBundle, state: WorkflowState) -> None:
+    known = {item.disagreement_id: item for item in state.model_disagreements}
+    if not set(bundle.disagreement_resolutions).issubset(known):
+        raise ValueError("Human resolution references an absent model disagreement")
+    if any(len(note.strip()) < 20 for note in bundle.disagreement_resolutions.values()):
+        raise ValueError(
+            "Human disagreement resolution requires an explanation of at least 20 characters"
+        )
+    state.model_disagreements = [
+        item.__class__.model_validate(
+            {
+                **item.model_dump(),
+                "resolution_status": "RESOLVED",
+                "resolved_by": bundle.reviewer,
+                "resolution_note": bundle.disagreement_resolutions[item.disagreement_id],
+            }
+        )
+        if item.disagreement_id in bundle.disagreement_resolutions
+        else item
+        for item in state.model_disagreements
+    ]
 
 
 def readiness_facts(
