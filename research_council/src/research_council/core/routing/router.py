@@ -144,6 +144,7 @@ class ModelRouter:
                         "incomplete",
                         "max_tokens",
                         "MAX_TOKENS",
+                        "CONTINUATION",
                         "blocked",
                         "content_filter",
                     ):

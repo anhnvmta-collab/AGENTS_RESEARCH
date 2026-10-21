@@ -21,7 +21,8 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
     allowed_tools: ClassVar[frozenset[str]] = frozenset()
     task_profile: ClassVar[TaskProfile]
     max_retries: ClassVar[int] = 2
-    timeout: ClassVar[float] = 60
+    # Role ceiling; Settings.timeout_seconds still defaults to 60 and bounds the request.
+    timeout: ClassVar[float] = 600
     provider_policy: ClassVar[str] = "configured_ordered_routes"
     input_schema: type[InputT]
     output_schema: type[OutputT]

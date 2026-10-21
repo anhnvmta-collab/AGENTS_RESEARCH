@@ -155,6 +155,9 @@ class GeminiProvider(HTTPProvider):
         ):
             raise ProviderError()
         config: dict[str, Any] = {"maxOutputTokens": request.max_output_tokens}
+        if request.model == "gemini-4-argon":
+            # Make Argon's documented default explicit; never send deprecated thinkingBudget.
+            config["thinkingConfig"] = {"thinkingLevel": "MEDIUM"}
         if request.output_schema:
             config.update(
                 responseMimeType="application/json", responseJsonSchema=request.output_schema
@@ -173,7 +176,7 @@ class GeminiProvider(HTTPProvider):
         candidates = result.get("candidates", [])
         parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
         return LLMResponse(
-            text="".join(part.get("text", "") for part in parts),
+            text="".join(part.get("text", "") for part in parts if not part.get("thought")),
             usage_available=bool(usage),
             input_tokens=usage.get("promptTokenCount", 0),
             # Gemini bills candidate and reasoning tokens together as output.

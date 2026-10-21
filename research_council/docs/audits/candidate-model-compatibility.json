@@ -1,0 +1,258 @@
+{
+  "base_commit": "4aaed7d82ed3eebd3875431936aac24392a03a4f",
+  "checked_on": "2026-10-21",
+  "models": {
+    "openai": "gpt-6.1-sol",
+    "anthropic": "claude-sonnet-5-5",
+    "google": "gemini-4-argon"
+  },
+  "scope": "Official specification comparison and offline mocks only; no live account/model verification.",
+  "offline_tests": {
+    "passed": 188,
+    "previous_suite": 179,
+    "new_cases": 9,
+    "failed": 0,
+    "live_deselected": 2
+  },
+  "checks": {
+    "ruff_format_check": "PASS",
+    "ruff_check": "PASS",
+    "mypy_source_files": 103,
+    "mypy": "PASS"
+  },
+  "three_model_scientific_run_cleared": false,
+  "remaining_blocker": "Anthropic native structured-output schema incompatibilities; no data-contract rewrite or prompt-only fallback applied.",
+  "anthropic_schema_observations": [
+    {
+      "role": "ResearchDirector",
+      "output_contract": "DirectorOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 0,
+        "optional_properties": 3,
+        "unsupported_numeric_string_array_bounds": 1
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "ResearchPlanner",
+      "output_contract": "ResearchPlan",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 1,
+        "optional_properties": 8,
+        "unsupported_numeric_string_array_bounds": 2
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "PerspectiveGenerator",
+      "output_contract": "PerspectivesOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 0,
+        "optional_properties": 2,
+        "unsupported_numeric_string_array_bounds": 0
+      },
+      "known_anthropic_blocker": false
+    },
+    {
+      "role": "QueryPlanner",
+      "output_contract": "QueriesOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 2,
+        "optional_properties": 7,
+        "unsupported_numeric_string_array_bounds": 3
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "PaperScout",
+      "output_contract": "CandidatesOutput",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 21,
+        "optional_properties": 52,
+        "unsupported_numeric_string_array_bounds": 27
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "CitationScout",
+      "output_contract": "CandidatesOutput",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 21,
+        "optional_properties": 52,
+        "unsupported_numeric_string_array_bounds": 27
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "LocalDocumentScout",
+      "output_contract": "CandidatesOutput",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 21,
+        "optional_properties": 52,
+        "unsupported_numeric_string_array_bounds": 27
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "PaperTriage",
+      "output_contract": "ScoresOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 0,
+        "optional_properties": 9,
+        "unsupported_numeric_string_array_bounds": 14
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "DeepReader",
+      "output_contract": "ReadingOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 8,
+        "optional_properties": 27,
+        "unsupported_numeric_string_array_bounds": 7
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "MathDSPAnalyst",
+      "output_contract": "MathOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 1,
+        "optional_properties": 13,
+        "unsupported_numeric_string_array_bounds": 2
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "HardwareArchitect",
+      "output_contract": "HardwareAssessment",
+      "counts": {
+        "arbitrary_key_objects": 5,
+        "unions": 1,
+        "optional_properties": 13,
+        "unsupported_numeric_string_array_bounds": 0
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "GapMiner",
+      "output_contract": "GapsOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 1,
+        "optional_properties": 6,
+        "unsupported_numeric_string_array_bounds": 2
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "NoveltyGenerator",
+      "output_contract": "NoveltyOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 3,
+        "optional_properties": 14,
+        "unsupported_numeric_string_array_bounds": 1
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "PriorArtHunter",
+      "output_contract": "PriorArtReport",
+      "counts": {
+        "arbitrary_key_objects": 2,
+        "unions": 29,
+        "optional_properties": 76,
+        "unsupported_numeric_string_array_bounds": 36
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "ReviewerTwo",
+      "output_contract": "ReviewerReport",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 2,
+        "optional_properties": 9,
+        "unsupported_numeric_string_array_bounds": 1
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "NoveltyJudge",
+      "output_contract": "NoveltyDecision",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 2,
+        "optional_properties": 9,
+        "unsupported_numeric_string_array_bounds": 3
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "ExperimentDesigner",
+      "output_contract": "ExperimentPlan",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 0,
+        "optional_properties": 18,
+        "unsupported_numeric_string_array_bounds": 0
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "PaperArchitect",
+      "output_contract": "PaperOutline",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 0,
+        "optional_properties": 6,
+        "unsupported_numeric_string_array_bounds": 0
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "CitationAuditor",
+      "output_contract": "AuditsOutput",
+      "counts": {
+        "arbitrary_key_objects": 1,
+        "unions": 1,
+        "optional_properties": 8,
+        "unsupported_numeric_string_array_bounds": 0
+      },
+      "known_anthropic_blocker": true
+    },
+    {
+      "role": "FinalSynthesizer",
+      "output_contract": "SynthesisOutput",
+      "counts": {
+        "arbitrary_key_objects": 0,
+        "unions": 0,
+        "optional_properties": 3,
+        "unsupported_numeric_string_array_bounds": 0
+      },
+      "known_anthropic_blocker": false
+    }
+  ],
+  "schema_scan_limit": "Counts of unique declared schema nodes/definitions, not expanded runtime instances; partial static scan, not full provider schema validation.",
+  "paid_model_calls_made": 0,
+  "live_benchmark_executed": false,
+  "real_provider_smoke_executed": false,
+  "scientific_readiness_advanced": false,
+  "patches": [
+    "Honor configured agent deadlines up to the existing 600-second Settings ceiling; preserve the 60-second configured default.",
+    "Explicit MEDIUM thinkingLevel only for gemini-4-argon; no thinkingBudget parameter.",
+    "Exclude Gemini thought-marked text parts from final JSON text.",
+    "Reject CONTINUATION as incomplete without starting continuation requests."
+  ]
+}
