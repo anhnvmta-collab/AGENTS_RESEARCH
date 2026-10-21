@@ -68,3 +68,16 @@ Default pytest and CI explicitly exclude the live marker. Selecting live tests w
 smoke tests are opt-in only; operator configuration is required for the paid route. Source/config
 credential-literal scanning and .env-ignore regressions pass. Checks: formatter/lint/mypy passed
 (92 source files); 138 offline tests passed, 0 failed; 2 live tests deselected, not executed.
+
+## 11I benchmark preparation, real controls and reproducibility
+Curated three nonexhaustive seed identities from primary arXiv/publisher pages, with provenance,
+version/date caveats and short known-answer excerpts. Curation is not counted as live benchmark
+execution or a retrieved finding. Added exact-title rejection, missing-prior-art coverage control,
+a weak unchanged-OMP control with raw model verdict separate from deterministic policy, four-risk
+candidate contracts and revision explanations. Added directed citation observations, an observed
+(not forced) taxonomy, prompt/context/evidence/source hashes and Git/config provenance.
+validate-science prepares all reports and expert artifacts with no Runtime/provider instantiation
+unless both --live and --confirm-paid-apis are present. SRL remains zero until explicit reviewed
+advancement. Partial/failed/paused live execution can be resumed and reviewed without inventing
+results. Checks: formatter/lint/mypy passed (99 source files); 151 offline tests passed, 0 failed;
+2 live tests deselected. Primary curation sources are linked in the benchmark README/seed file.

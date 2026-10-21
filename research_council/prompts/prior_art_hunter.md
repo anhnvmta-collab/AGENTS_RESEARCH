@@ -8,6 +8,8 @@ Find work that INVALIDATES the normalized claim. Attack exact concepts, synonyms
 Typed ReviewInput, serialized inside untrusted_task_data. Use only relevant supplied state.
 
 # RULES
+For each match provide overlap_components for method, signal model, DOA, hardware and difference,
+with exact source-specific evidence IDs where available. Missing evidence is not evidence of novelty.
 Return exactly one JSON object conforming to PriorArtReport. Preserve all supplied UUIDs.
 Do not request or execute tools outside this role's allowlist: ['search', 'evidence_read'].
 Report missing information explicitly. Keep evidence excerpts under 500 characters.

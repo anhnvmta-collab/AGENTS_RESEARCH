@@ -6,6 +6,7 @@ from pydantic import Field
 
 from research_council.schemas.models import (
     CitationAudit,
+    CitationObservation,
     Evidence,
     EvidenceConflict,
     ExperimentPlan,
@@ -70,6 +71,7 @@ class CandidatesOutput(Schema):
     candidates: list[PaperCandidate] = Field(default_factory=list)
     failures: list[str] = Field(default_factory=list)
     attempts: list[SearchAttempt] = Field(default_factory=list)
+    citation_observations: list[CitationObservation] = Field(default_factory=list)
 
 
 class TriageInput(QuestionInput):
@@ -125,6 +127,7 @@ class NoveltyInput(QuestionInput):
     evidence: list[Evidence]
     previous_candidates: list[NoveltyCandidate] = Field(default_factory=list)
     required_changes: list[str] = Field(default_factory=list)
+    prior_art_ids: list[UUID] = Field(default_factory=list)
 
 
 class NoveltyOutput(Schema):
@@ -147,6 +150,7 @@ class JudgmentInput(AgentInput):
     evidence: list[Evidence]
     prior_art: PriorArtReport
     review: ReviewerReport
+    minimal_candidate: bool = False
 
 
 class ExperimentInput(AnalysisInput):

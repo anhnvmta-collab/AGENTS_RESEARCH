@@ -9,6 +9,18 @@ from research_council.schemas.models import Evidence, NoveltyCandidate, Schema, 
 
 def build_context(value: Schema, *, max_chars: int = 150_000, role: str | None = None) -> str:
     content = value.model_dump(mode="json")
+    if role == "NoveltyJudge" and content.get("minimal_candidate"):
+        content["candidate"] = {
+            key: content["candidate"][key]
+            for key in (
+                "candidate_id",
+                "revision",
+                "normalized_claim",
+                "keywords",
+                "evidence_ids",
+                "gap_ids",
+            )
+        }
     if isinstance(value, ReviewInput):
         for item in content["evidence"]:
             item["agent_interpretation"] = ""

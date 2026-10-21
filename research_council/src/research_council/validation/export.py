@@ -96,6 +96,8 @@ def export_review_package(
     target.mkdir(parents=True, exist_ok=True)
     review = workspace_path(target, "human_review")
     review.mkdir(parents=True, exist_ok=True)
+    for name in ("gap_review.md", "novelty_review.md", "hardware_review.md", "review_checklist.md"):
+        workspace_path(review, name)
     latest_identity = {item.paper_id: item for item in state.identity_audits}
     paper_rows = []
     for item in state.candidates:

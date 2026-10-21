@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import random
 from time import perf_counter
 from typing import TypeVar
@@ -110,6 +111,8 @@ class ModelRouter:
                     provider=provider.name,
                     model=route.model,
                     retry_count=attempt,
+                    prompt_sha256=hashlib.sha256(system.encode()).hexdigest(),
+                    context_sha256=hashlib.sha256(user.encode()).hexdigest(),
                 )
                 if role == "ReviewerTwo" and avoid_provider:
                     execution.routing_note = (

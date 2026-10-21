@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
+from research_council.cli.science import register_science_commands
 from research_council.core.config import Settings, load_settings
 from research_council.core.orchestration.engine import WorkflowEngine
 from research_council.core.orchestration.state import WorkflowState
@@ -30,6 +31,7 @@ app.add_typer(models_app, name="models")
 benchmark_app = typer.Typer(no_args_is_help=True)
 app.add_typer(benchmark_app, name="benchmark")
 console = Console()
+register_science_commands(app)
 WorkspaceOption = Annotated[Path, typer.Option("--workspace", "-w", help="Project data workspace.")]
 
 

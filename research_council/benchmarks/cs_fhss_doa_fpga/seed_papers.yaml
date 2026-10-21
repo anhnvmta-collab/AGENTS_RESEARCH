@@ -1,2 +1,51 @@
-notice: Curated references are populated only after primary-source identity verification. This list is not exhaustive.
-papers: []
+notice: Nonexhaustive primary-source metadata curation on 2026-10-21. These are coverage seeds, not discoveries or scientific validation from a paid benchmark run.
+papers:
+  - identifier: cosamp_needell_tropp_2008
+    metadata:
+      title: 'CoSaMP: Iterative signal recovery from incomplete and inaccurate samples'
+      authors: [D. Needell, J. A. Tropp]
+      year: 2008
+      venue: arXiv
+      doi: 10.48550/arXiv.0803.2392
+      url: https://arxiv.org/abs/0803.2392
+      metadata_source: arxiv
+      metadata_verified: true
+    doi_aliases: []
+    identity_sources: [https://arxiv.org/abs/0803.2392]
+    verified_on: '2026-10-21'
+    verification_basis: Primary arXiv title, author list, submission year and arXiv-issued DOI were inspected.
+    method_families: [CoSaMP]
+    note: Preprint identity is used; this is not an FHSS or FPGA performance claim.
+  - identifier: mishali_eldar_mwc_2009
+    metadata:
+      title: 'From Theory to Practice: Sub-Nyquist Sampling of Sparse Wideband Analog Signals'
+      authors: [Moshe Mishali, Yonina C. Eldar]
+      year: 2009
+      venue: arXiv
+      doi: 10.48550/arXiv.0902.4291
+      url: https://arxiv.org/abs/0902.4291
+      metadata_source: arxiv
+      metadata_verified: true
+    doi_aliases: [10.1109/JSTSP.2010.2042414]
+    identity_sources: [https://arxiv.org/abs/0902.4291]
+    verified_on: '2026-10-21'
+    verification_basis: Primary arXiv title, authors, preprint date and related journal DOI were inspected.
+    method_families: [multiband_sampling]
+    note: Preprint year is 2009; the linked journal version is 2010. Alias matching is for recall, not permission to erase identity-date conflicts.
+  - identifier: nguyen_omp_hardware_2020
+    metadata:
+      title: High-throughput and low-area implementation of orthogonal matching pursuit algorithm for compressive sensing reconstruction
+      authors: [Vu Quan Nguyen, Woo Hyun Son, Marek Parfieniuk, Luong Tran Nhat Trung, Sang Yoon Park]
+      year: 2020
+      venue: ETRI Journal
+      doi: 10.4218/etrij.2019-0067
+      url: https://onlinelibrary.wiley.com/doi/full/10.4218/etrij.2019-0067
+      metadata_source: publisher-curated
+      metadata_verified: true
+    doi_aliases: []
+    identity_sources: [https://onlinelibrary.wiley.com/doi/full/10.4218/etrij.2019-0067]
+    verified_on: '2026-10-21'
+    verification_basis: Publisher title, five authors, DOI and June 2020 issue/citation were inspected.
+    method_families: [OMP]
+    note: First online publication is December 2019; the citation year is 2020. This is source-reported logic-synthesis work, not a measured FPGA/RF result from this benchmark.
+expected_citation_edges: []

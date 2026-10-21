@@ -62,6 +62,7 @@ from research_council.schemas.models import (
     ResearchPlan,
     ResearchRun,
     ReviewerReport,
+    RiskLevel,
     Schema,
     SearchQuery,
     VerificationStatus,
@@ -246,6 +247,7 @@ class ResearchPipeline:
                     state.candidates.extend(result.candidates)
                     state.warnings.extend(result.failures)
                     state.search_history.extend(result.attempts)
+                    state.citation_observations.extend(result.citation_observations)
                 else:
                     state.warnings.append(f"Citation scout incomplete: {type(result).__name__}")
         state.candidates = self._canonicalize(state.candidates)
@@ -405,6 +407,7 @@ class ResearchPipeline:
                 state.candidates.extend(result.candidates)
                 state.warnings.extend(result.failures)
                 state.search_history.extend(result.attempts)
+                state.citation_observations.extend(result.citation_observations)
             else:
                 state.warnings.append(f"Discovery branch failed: {type(result).__name__}")
         state.candidates = self._canonicalize(state.candidates)
@@ -588,6 +591,10 @@ class ResearchPipeline:
                 "AUDIT requires an explicit --claim for contribution-specific adversarial review."
             )
         state.knowledge_map = build_knowledge_map(run.question.topic, state)
+        if self.settings.science_benchmark:
+            from research_council.validation.taxonomy import observed_taxonomy
+
+            state.knowledge_map = observed_taxonomy(state)
         return state
 
     async def novelty(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
@@ -757,6 +764,9 @@ class PipelineNoveltyOperations:
             required_changes=[
                 risk for decision in state.decisions[-5:] for risk in decision.remaining_risks
             ],
+            prior_art_ids=list(
+                {match.paper_id for report in state.prior_art for match in report.matches}
+            ),
         )
         result = await self.pipeline.safe(
             self.pipeline.call(agents.NoveltyGenerator, value),
@@ -764,8 +774,45 @@ class PipelineNoveltyOperations:
             state,
             "NoveltyGenerator",
         )
-        candidates = NoveltyOutput.model_validate(result).candidates[:3]
+        candidates = NoveltyOutput.model_validate(result).candidates[
+            : 4 if self.pipeline.settings.science_benchmark else 3
+        ]
+        if self.pipeline.settings.science_benchmark and iteration == 1 and state.evidence:
+            from research_council.validation.benchmark import load_benchmark
+
+            candidates.append(
+                NoveltyCandidate(
+                    candidate_id=uuid5(self.run.run_id, "negative-novelty-control"),
+                    gap_ids=[state.gaps[0].gap_id],
+                    evidence_ids=[state.evidence[0].evidence_id],
+                    normalized_claim=load_benchmark().negative_control,
+                    keywords=["OMP", "UAV", "FHSS"],
+                    what_is_new="Application change only; intentionally weak benchmark control.",
+                    why_it_matters="Measure whether unchanged-method reuse is overpromoted.",
+                    why_prior_methods_insufficient="No scientific insufficiency has been established.",
+                    proposed_method="Existing OMP without mathematical or implementation changes.",
+                    validation_plan="Independent prior-art attack and reviewer assessment; preserve raw model verdict.",
+                    risk_level=RiskLevel.LOW_RISK,
+                    mathematical_change="NONE",
+                    implementation_change="NONE",
+                    falsification_test="Existing matching-pursuit prior art invalidates an algorithmic-novelty claim.",
+                    is_negative_control=True,
+                )
+            )
         for candidate in candidates:
+            if self.pipeline.settings.science_benchmark and iteration > 1:
+                previous = next(
+                    (
+                        item
+                        for item in reversed(state.novelty_candidates)
+                        if item.risk_level == candidate.risk_level and not item.is_negative_control
+                    ),
+                    None,
+                )
+                if previous:
+                    candidate.candidate_id = previous.candidate_id
+                    if not (candidate.revision_summary and candidate.change_reason):
+                        raise ValueError("Candidate revisions require what changed and why")
             candidate.revision = iteration
             if self.run.mode == Mode.AUDIT and self.run.question.audit_claim:
                 candidate.normalized_claim = self.run.question.audit_claim
@@ -828,17 +875,42 @@ class PipelineNoveltyOperations:
             ],
             prior_art=prior_art.model_copy(update={"discovered_candidates": []}),
             review=review,
+            minimal_candidate=bool(self.pipeline.settings.science_benchmark),
         )
         default = NoveltyDecision(
             candidate_id=candidate.candidate_id,
             revision=candidate.revision,
             remaining_risks=["Judgment incomplete."],
         )
-        return NoveltyDecision.model_validate(
+        decision = NoveltyDecision.model_validate(
             await self.pipeline.safe(
                 self.pipeline.call(agents.NoveltyJudge, value), default, state, "NoveltyJudge"
             )
         )
+        if self.pipeline.settings.science_benchmark:
+            from research_council.validation.controls import (
+                novelty_coverage_status,
+                unchanged_method_control,
+            )
+
+            decision.model_verdict = decision.verdict if decision.model_execution_id else None
+            if unchanged_method_control(candidate):
+                decision.verdict = "REJECT"
+                decision.policy_overrides.append(
+                    "UNCHANGED_METHOD_CONTROL: no mathematical or implementation contribution is claimed; raw model verdict retained separately."
+                )
+            elif (
+                decision.verdict == "SURVIVE"
+                and novelty_coverage_status(prior_art) == "INSUFFICIENT_SEARCH_COVERAGE"
+            ):
+                decision.verdict = "REVISE"
+                decision.policy_overrides.append("INSUFFICIENT_SEARCH_COVERAGE")
+            if decision.verdict == "SURVIVE" and not any(
+                item.verification_status == VerificationStatus.VERIFIED for item in value.evidence
+            ):
+                decision.verdict = "REVISE"
+                decision.policy_overrides.append("Verified scientific evidence is unavailable.")
+        return decision
 
     async def targeted_search(self, queries: list[str], state: WorkflowState) -> WorkflowState:
         before_papers = {item.paper.paper_id for item in state.candidates}

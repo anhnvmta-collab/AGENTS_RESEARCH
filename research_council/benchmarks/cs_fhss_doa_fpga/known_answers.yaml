@@ -1,0 +1,23 @@
+notice: Short primary-source excerpts for offline contract/grounding controls and opt-in provider assessment. Expected answers are curated; offline fake recovery is not LLM scientific validation.
+cases:
+  - seed_id: cosamp_needell_tropp_2008
+    source_url: https://arxiv.org/abs/0803.2392
+    source_location: abstract
+    excerpt: requires only matrix-vector multiplies with the sampling matrix
+    field: recovery_algorithm
+    normalized_statement: The CoSaMP abstract describes matrix-vector multiplication with the sampling matrix.
+    expected_terms: [CoSaMP, matrix]
+  - seed_id: mishali_eldar_mwc_2009
+    source_url: https://arxiv.org/abs/0902.4291
+    source_location: abstract
+    excerpt: restricted to discrete multitone signals
+    field: author_reported_limitation
+    normalized_statement: The comparison attributes a discrete-multitone restriction to the random demodulator, not to all sub-Nyquist methods.
+    expected_terms: [random demodulator, discrete]
+  - seed_id: nguyen_omp_hardware_2020
+    source_url: https://onlinelibrary.wiley.com/doi/full/10.4218/etrij.2019-0067
+    source_location: abstract
+    excerpt: nearly 19 times faster
+    field: reported_hardware_result
+    normalized_statement: The publisher abstract reports a logic-synthesis comparison near 19 times faster, under the stated dimensions and compared designs; this is not our measurement.
+    expected_terms: [synthesis, 19]

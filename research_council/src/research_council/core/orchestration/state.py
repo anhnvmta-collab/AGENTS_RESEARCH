@@ -8,6 +8,7 @@ from research_council.agents.contracts import PaperOutline, SynthesisOutput
 from research_council.core.saturation import SearchSaturationSignal
 from research_council.schemas.models import (
     CitationAudit,
+    CitationObservation,
     Evidence,
     EvidenceConflict,
     ExperimentPlan,
@@ -74,3 +75,4 @@ class WorkflowState(Schema):
     identity_observations: dict[str, list[PaperMetadata]] = Field(default_factory=dict)
     shortlist_reasons: dict[UUID, list[str]] = Field(default_factory=dict)
     model_disagreements: list[ModelDisagreement] = Field(default_factory=list)
+    citation_observations: list[CitationObservation] = Field(default_factory=list)

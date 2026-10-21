@@ -7,7 +7,13 @@ import yaml
 from pydantic import Field, field_validator, model_validator
 
 from research_council.repositories.store import normalized_title
-from research_council.schemas.models import Paper, PaperMetadata, Schema, normalize_doi
+from research_council.schemas.models import (
+    CitationObservation,
+    Paper,
+    PaperMetadata,
+    Schema,
+    normalize_doi,
+)
 from research_council.validation.benchmark import benchmark_directory
 
 
@@ -54,6 +60,7 @@ class MeasuredRatio(Schema):
 
 
 class CoverageReport(Schema):
+    measurement_status: str = "OBSERVED_WITHIN_SEARCHED_SOURCES"
     seed_paper_recall: MeasuredRatio
     method_family_recall: MeasuredRatio
     concept_coverage: MeasuredRatio
@@ -69,6 +76,16 @@ def load_seeds(directory: Path | None = None) -> list[SeedPaper]:
         ((directory or benchmark_directory()) / "seed_papers.yaml").read_text(encoding="utf-8")
     )
     return [SeedPaper.model_validate(item) for item in raw.get("papers", [])]
+
+
+def verified_citation_edges(observations: list[CitationObservation]) -> set[tuple[str, str]]:
+    return {
+        (item.seed_identifier, item.target_identifier)
+        if item.direction == "backward"
+        else (item.target_identifier, item.seed_identifier)
+        for item in observations
+        if item.relation_verified and item.direction in {"backward", "forward"}
+    }
 
 
 def vocabulary(filename: str, key: str, directory: Path | None = None) -> dict[str, list[str]]:

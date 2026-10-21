@@ -252,6 +252,15 @@ class SearchAttempt(Schema):
     completed_at: datetime = Field(default_factory=utcnow)
 
 
+class CitationObservation(Schema):
+    seed_identifier: str
+    target_identifier: str
+    direction: str
+    adapter: str
+    relation_verified: bool = False
+    observed_at: datetime = Field(default_factory=utcnow)
+
+
 class PaperScore(Schema):
     paper_id: UUID
     relevance: Score = 0
@@ -410,6 +419,7 @@ class NoveltyCandidate(Schema):
     revision_summary: str = ""
     change_reason: str = ""
     trigger_prior_art_ids: list[UUID] = Field(default_factory=list)
+    is_negative_control: bool = False
 
 
 class PriorArtMatch(Schema):
@@ -467,6 +477,8 @@ class NoveltyDecision(Schema):
     required_followup_searches: list[str] = Field(default_factory=list)
     remaining_risks: list[str] = Field(default_factory=list)
     model_execution_id: UUID | None = None
+    model_verdict: str | None = None
+    policy_overrides: list[str] = Field(default_factory=list)
 
 
 class HardwareAssessment(Schema):
@@ -552,6 +564,8 @@ class ModelExecution(AgentExecution):
     human_evaluation_score: Score | None = None
     cost_basis: str = "usage"
     routing_note: str | None = None
+    prompt_sha256: str | None = None
+    context_sha256: str | None = None
 
 
 class QualityGateResult(Schema):

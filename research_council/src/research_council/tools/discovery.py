@@ -6,7 +6,12 @@ from difflib import SequenceMatcher
 
 from research_council.agents.contracts import CandidatesOutput, SearchInput
 from research_council.repositories.store import normalized_title
-from research_council.schemas.models import Paper, PaperCandidate, SearchAttempt
+from research_council.schemas.models import (
+    CitationObservation,
+    Paper,
+    PaperCandidate,
+    SearchAttempt,
+)
 from research_council.tools.local import LocalDocumentAdapter
 from research_council.tools.search import CitationAdapter, SearchAdapter
 
@@ -133,6 +138,25 @@ class DiscoveryService:
             async with self.semaphore:
                 try:
                     papers = await adapter.explore(paper, value.direction, self.limit)
+                    seed = paper.metadata.doi or paper.metadata.url
+                    for target in papers:
+                        identifier = target.metadata.doi or target.metadata.url
+                        if seed and identifier:
+                            result.citation_observations.append(
+                                CitationObservation(
+                                    seed_identifier=seed,
+                                    target_identifier=identifier,
+                                    direction=value.direction,
+                                    adapter=adapter.name,
+                                    relation_verified=(
+                                        value.direction == "backward"
+                                        and adapter.name in {"crossref", "openalex"}
+                                    )
+                                    or (
+                                        value.direction == "forward" and adapter.name == "openalex"
+                                    ),
+                                )
+                            )
                     result.attempts.append(
                         SearchAttempt(
                             adapter=adapter.name,

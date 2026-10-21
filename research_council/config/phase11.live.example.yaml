@@ -1,0 +1,45 @@
+# Operator must supply account-valid models and current per-million-token prices.
+# No key belongs here. Preparation works without this file or credentials.
+science_benchmark: CS_FHSS_DOA_FPGA
+research:
+  max_novelty_iterations: 3
+  max_core_papers: 12
+  min_novelty_evidence: 2
+  max_queries: 36
+  max_model_calls: 80
+  budget_usd: 5.0
+  human_approval_required: true
+live_research_budget:
+  max_total_cost: 5.0
+  max_model_calls: 80
+  max_search_calls: 1000
+  max_core_papers: 12
+  max_deep_reads: 12
+  max_novelty_iterations: 3
+concurrency: {agents: 3, searches: 3, paper_reads: 2}
+search:
+  adapters: [crossref, openalex, arxiv]
+  results_per_query: 5
+  local_documents: []
+  saturation_patience: 3
+  minimum_new_unique_rate: 0.02
+models:
+  SEARCH_PLANNING:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  PAPER_EXTRACTION:
+    - {provider: anthropic, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  MATH_REASONING:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  HARDWARE_REASONING:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  SYNTHESIS:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  NOVELTY_GENERATION:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  ADVERSARIAL_REVIEW:
+    - {provider: google, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+  CITATION_VERIFICATION:
+    - {provider: openai, model: CONFIGURE_ME, input_cost_per_million: null, output_cost_per_million: null}
+# Optional role_routes can give NoveltyJudge a third independent configured route.
+retries: 1
+timeout_seconds: 60
