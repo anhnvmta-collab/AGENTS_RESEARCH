@@ -62,6 +62,7 @@ def create_run(
     demo: bool = False,
     live: bool = False,
     confirm_paid_apis: bool = False,
+    project: ResearchProject | None = None,
 ) -> ResearchRun:
     if settings.science_benchmark and live and not confirm_paid_apis:
         raise ValueError("Scientific live validation requires --live and --confirm-paid-apis")
@@ -99,7 +100,7 @@ def create_run(
                     )
         if not any(os.environ.get(key_names[name]) for name in configured if name in key_names):
             raise ValueError("No API key is configured for the enabled model providers")
-    project = ResearchProject(title=question.topic, question=question)
+    project = project or ResearchProject(title=question.topic, question=question)
     run = ResearchDirector.create_research_run(
         project_id=project.project_id,
         question=question,

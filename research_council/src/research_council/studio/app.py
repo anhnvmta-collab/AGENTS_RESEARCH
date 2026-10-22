@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from research_council.studio.models import StudioProject
+from research_council.studio.models import Decision, StartRequest, StudioProject
 from research_council.studio.service import StudioService
 
 ORIGINS = {"http://127.0.0.1:5173", "http://localhost:5173", "http://127.0.0.1:8765"}
@@ -22,6 +22,12 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         yield
+        for identity in service.jobs:
+            service.control(identity, "pause")
+        if service.jobs:
+            import asyncio
+
+            await asyncio.gather(*service.jobs.values(), return_exceptions=True)
         service.repository.engine.dispose()
 
     app = FastAPI(title="Research Council Studio", lifespan=lifespan)
@@ -99,5 +105,39 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     @app.get("/api/runs/{identity}")
     def run(identity: UUID) -> dict[str, Any]:
         return service.snapshot(identity)
+
+    @app.post("/api/projects/{identity}/runs", status_code=201)
+    def new_run(identity: UUID, request: StartRequest) -> dict[str, Any]:
+        return service.new_run(identity, request.confirmation)
+
+    @app.post("/api/runs/{identity}/start")
+    @app.post("/api/runs/{identity}/resume")
+    async def start(identity: UUID) -> dict[str, Any]:
+        return await service.start(identity)
+
+    @app.post("/api/runs/{identity}/pause")
+    def pause(identity: UUID) -> dict[str, Any]:
+        return service.control(identity, "pause")
+
+    @app.post("/api/runs/{identity}/cancel")
+    async def cancel(identity: UUID) -> dict[str, Any]:
+        result = service.control(identity, "cancel")
+        if identity not in service.jobs or service.jobs[identity].done():
+            run = service.repository.get_run(identity)
+            if run.status not in {"COMPLETED", "REJECTED", "BUDGET_EXHAUSTED"}:
+                from research_council.core.orchestration.engine import WorkflowEngine
+                from research_council.core.runtime import settings_for_run
+
+                await WorkflowEngine(
+                    service.repository,
+                    settings_for_run(service.repository, identity),
+                    [],
+                    control=lambda: "cancel",
+                ).resume(identity)
+        return result
+
+    @app.post("/api/runs/{identity}/approve")
+    def decide(identity: UUID, decision: Decision) -> dict[str, Any]:
+        return service.decide(identity, decision)
 
     return app

@@ -79,11 +79,13 @@ class WorkflowEngine:
         settings: Settings,
         stages: list[Stage],
         trace: TraceSink | None = None,
+        control: Callable[[], str | None] | None = None,
     ) -> None:
         self.repository = repository
         self.settings = settings
         self.stages = stages
         self.trace = trace
+        self.control = control
 
     def load_state(self, run_id: UUID) -> WorkflowState:
         state = WorkflowState.model_validate(self.repository.artifacts(run_id).get("state", {}))
@@ -104,6 +106,11 @@ class WorkflowEngine:
             if run.status in ("COMPLETED", "REJECTED", "BUDGET_EXHAUSTED"):
                 return run
             state = self.load_state(run_id)
+            command = self.control() if self.control else None
+            if command == "cancel":
+                run.status = "REJECTED"
+                self.repository.checkpoint(run, {"state": state})
+                return run
             if state.pending_approval:
                 return run
             run.status = "RUNNING"
@@ -111,6 +118,14 @@ class WorkflowEngine:
             state.events.append(WorkflowEvent(run_id=run_id, stage="workflow", event="RESUMED"))
             self.repository.checkpoint(run, {"state": state})
             while run.stage < len(self.stages):
+                command = self.control() if self.control else None
+                if command in {"pause", "cancel"}:
+                    run.status = "PAUSED" if command == "pause" else "REJECTED"
+                    state.events.append(
+                        WorkflowEvent(run_id=run_id, stage="workflow", event="PAUSED")
+                    )
+                    self.repository.checkpoint(run, {"state": state})
+                    return run
                 stage = self.stages[run.stage]
                 if heartbeat.done():
                     await heartbeat

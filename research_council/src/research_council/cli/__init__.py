@@ -15,6 +15,7 @@ from rich.table import Table
 
 from research_council.cli.providers import register_provider_commands
 from research_council.cli.science import register_science_commands
+from research_council.cli.studio import register_studio_commands
 from research_council.core.config import Settings, load_settings
 from research_council.core.orchestration.engine import WorkflowEngine
 from research_council.core.orchestration.state import WorkflowState
@@ -34,6 +35,7 @@ app.add_typer(benchmark_app, name="benchmark")
 console = Console()
 register_science_commands(app)
 register_provider_commands(app)
+register_studio_commands(app)
 WorkspaceOption = Annotated[Path, typer.Option("--workspace", "-w", help="Project data workspace.")]
 
 
