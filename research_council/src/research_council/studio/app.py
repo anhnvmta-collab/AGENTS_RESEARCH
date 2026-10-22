@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -105,6 +105,32 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     @app.get("/api/runs/{identity}")
     def run(identity: UUID) -> dict[str, Any]:
         return service.snapshot(identity)
+
+    @app.post("/api/projects/{identity}/documents")
+    async def documents(identity: UUID, files: list[UploadFile]) -> list[dict[str, Any]]:
+        from research_council.studio.documents import upload
+
+        return await upload(service, identity, files)
+
+    @app.get("/api/runs/{identity}/papers")
+    @app.get("/api/runs/{identity}/evidence")
+    @app.get("/api/runs/{identity}/claims")
+    @app.get("/api/runs/{identity}/gaps")
+    @app.get("/api/runs/{identity}/novelty")
+    @app.get("/api/runs/{identity}/reviews")
+    def collection(identity: UUID, request: Request) -> Any:
+        collection = request.url.path.rsplit("/", 1)[-1]
+        fields = {
+            "papers": "candidates",
+            "evidence": "evidence",
+            "claims": "claims",
+            "gaps": "gaps",
+            "novelty": "novelty_candidates",
+            "reviews": "reviews",
+        }
+        if collection not in fields:
+            raise KeyError("Unknown collection")
+        return service.snapshot(identity)["state"][fields[collection]]
 
     @app.post("/api/projects/{identity}/runs", status_code=201)
     def new_run(identity: UUID, request: StartRequest) -> dict[str, Any]:

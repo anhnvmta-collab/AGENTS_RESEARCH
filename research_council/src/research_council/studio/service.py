@@ -76,6 +76,15 @@ class StudioService:
             raise RuntimeError("Run is already executing")
         if run.status in {"COMPLETED", "REJECTED", "BUDGET_EXHAUSTED"}:
             raise ValueError("Terminal run cannot resume")
+        if run.stage == 0 and not self.repository.list_model_executions(identity):
+            settings = settings_for_run(self.repository, identity)
+            settings.search.local_documents = [
+                row["path"]
+                for row in self.store.list("document")
+                if row["project_id"] == str(run.project_id) and row["status"] == "PARSED"
+            ]
+            run.config_fingerprint = settings.fingerprint()
+            self.repository.checkpoint(run, {"settings": settings})
         self.store.put("control", str(identity), {"command": None})
         self.jobs[identity] = asyncio.create_task(self.execute(identity))
         return self.snapshot(identity)
@@ -146,6 +155,8 @@ class StudioService:
         return self.store.put("project", str(project.id), project.model_dump(mode="json"))
 
     def snapshot(self, identity: UUID) -> dict[str, Any]:
+        from research_council.knowledge.mapping import build_knowledge_map
+
         run = self.repository.get_run(identity)
         state = WorkflowState.model_validate(self.repository.artifacts(identity).get("state", {}))
         return {
@@ -166,6 +177,9 @@ class StudioService:
                 if key.startswith("operation_")
             },
             "control": self.command(identity),
+            "observed_map": (
+                state.knowledge_map or build_knowledge_map(run.question.topic, state)
+            ).model_dump(mode="json"),
         }
 
     def agents(self, identity: UUID) -> list[dict[str, Any]]:
