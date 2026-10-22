@@ -145,6 +145,54 @@ class StudioService:
                 result = await engine.resume(identity)
                 state = engine.load_state(identity)
                 MarkdownExporter(self.workspace, self.repository).export(result, state)
+            if (
+                run.provenance == "fixture"
+                and state.pending_approval == "after_experiment_plan"
+                and not state.experiments
+            ):
+                # Gate 2 correctly prevents canonical experiment adoption for fixtures.
+                # Execute the real roles as visibly advisory learning artifacts instead.
+                from research_council.studio.interactions import discuss
+                from research_council.studio.models import Interaction
+
+                previous = [
+                    item
+                    for item in self.store.list("practice_design")
+                    if item["run_id"] == str(identity)
+                ]
+                if not previous:
+                    experiment = await discuss(
+                        self,
+                        "ExperimentDesigner",
+                        Interaction(
+                            run_id=identity,
+                            task="Create an exploratory SYNTHETIC experiment plan. Gate 2 is blocked; do not claim accepted novelty or measured results.",
+                        ),
+                    )
+                    paper = await discuss(
+                        self,
+                        "PaperArchitect",
+                        Interaction(
+                            run_id=identity,
+                            task="Create a SYNTHETIC exploratory IEEE roadmap; no publication readiness.",
+                            input={
+                                "experiments": [experiment["output"]],
+                                "claims": [item.model_dump(mode="json") for item in state.claims],
+                                "limitations": state.limitations,
+                            },
+                        ),
+                    )
+                    self.store.put(
+                        "practice_design",
+                        str(identity),
+                        {
+                            "run_id": str(identity),
+                            "experiments": [experiment["output"]],
+                            "outline": paper["output"],
+                            "scope": "ADVISORY_SYNTHETIC",
+                            "reason": "Canonical Gate 2 remains blocked. These real agent executions are learning artifacts, not accepted scientific contributions.",
+                        },
+                    )
         except Exception as exc:
             self.store.put(
                 "worker_error",
@@ -195,6 +243,10 @@ class StudioService:
 
         run = self.repository.get_run(identity)
         state = WorkflowState.model_validate(self.repository.artifacts(identity).get("state", {}))
+        practice_design = next(
+            (row for row in self.store.list("practice_design") if row["run_id"] == str(identity)),
+            None,
+        )
         return {
             "run": run.model_dump(mode="json"),
             "state": state.model_dump(mode="json"),
@@ -216,6 +268,15 @@ class StudioService:
             "observed_map": (
                 state.knowledge_map or build_knowledge_map(run.question.topic, state)
             ).model_dump(mode="json"),
+            "practice_design": practice_design,
+            "worker_error": next(
+                (
+                    row
+                    for row in self.store.list("worker_error")
+                    if row.get("run_id") == str(identity)
+                ),
+                None,
+            ),
         }
 
     def agents(self, identity: UUID) -> list[dict[str, Any]]:

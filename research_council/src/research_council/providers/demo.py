@@ -162,6 +162,24 @@ def synthetic_response(request: LLMRequest) -> LLMResponse:
         }
     elif role == "HardwareArchitect":
         result = {
+            "platform": "SYNTHETIC FPGA receiver (training assumptions)",
+            "parameters": {
+                "ADC rate": 100000000.0,
+                "Channels": 4.0,
+                "Clock": 125000000.0,
+                "Fixed-point assumptions": "16-bit training example; validate quantization",
+            },
+            "parameter_provenance": {
+                "ADC rate": "ESTIMATED",
+                "Channels": "ESTIMATED",
+                "Clock": "ESTIMATED",
+                "Fixed-point assumptions": "ESTIMATED",
+            },
+            "parameter_assumptions": {
+                "ADC rate": ["Synthetic exercise assumption, not a device specification"],
+                "Channels": ["Assumed array for training only"],
+                "Clock": ["Unverified training target"],
+            },
             "feasibility": "YELLOW",
             "justification": "SYNTHETIC fixture lacks implementation measurements.",
             "evidence_ids": [item["evidence_id"] for item in data.get("evidence", [])],

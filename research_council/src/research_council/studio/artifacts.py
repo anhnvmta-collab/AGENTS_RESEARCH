@@ -54,6 +54,8 @@ def paper_sections(
 ) -> list[dict[str, Any]]:
     snapshot = service.snapshot(identity)
     state = snapshot["state"]
+    if snapshot.get("practice_design") and not state["outline"]["sections"]:
+        state = {**state, "outline": snapshot["practice_design"]["outline"]}
     revisions = (
         [
             row
@@ -144,5 +146,9 @@ def export_zip(service: StudioService, identity: UUID) -> bytes:
                 ensure_ascii=False,
                 indent=2,
             ),
+        )
+        archive.writestr(
+            "studio_practice_advisory.json",
+            json.dumps(service.store.list("practice_design"), ensure_ascii=False, indent=2),
         )
     return output.getvalue()
