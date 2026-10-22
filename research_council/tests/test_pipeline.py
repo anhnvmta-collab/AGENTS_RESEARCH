@@ -23,7 +23,7 @@ async def test_offline_end_to_end(tmp_path, mode):
     target = MarkdownExporter(tmp_path, repo).export(result, state)
     manifest = json.loads((target / "run_manifest.json").read_text())
     assert not manifest["publication_ready"]
-    assert len(manifest["files"]) == 18
+    assert len(manifest["files"]) == 19
     repo.engine.dispose()
 
 
@@ -56,7 +56,7 @@ async def test_fixture_end_to_end_and_resume(tmp_path):
     assert "NOT ESTABLISHED" in report
     assert not json.loads((target / "run_manifest.json").read_text())["publication_ready"]
     manifest = json.loads((target / "run_manifest.json").read_text())
-    assert len(list(target.iterdir())) == 19
+    assert len(list(target.iterdir())) == 20
     assert all(
         hashlib.sha256((target / name).read_bytes()).hexdigest() == digest
         for name, digest in manifest["files"].items()

@@ -8,6 +8,7 @@ __pycache__/
 .env.*
 !.env.example
 config/phase11.operator.yaml
+config/pilot01.operator.yaml
 workspace/
 dist/
 .wheel-smoke/

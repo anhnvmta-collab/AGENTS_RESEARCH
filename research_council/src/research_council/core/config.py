@@ -34,6 +34,7 @@ class ResearchConfig(Schema):
     max_model_calls: int = Field(default=200, ge=1)
     budget_usd: float = Field(default=5, ge=0)
     human_approval_required: bool = False
+    novelty_review_each_revision: bool = False
 
 
 class ConcurrencyConfig(Schema):

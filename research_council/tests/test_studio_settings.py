@@ -22,7 +22,12 @@ def test_settings_preflight_and_real_confirmation_are_offline(tmp_path, monkeypa
         assert client.put("/api/settings", json=config).status_code == 422
         for routes in [*config["models"].values(), *config["role_routes"].values()]:
             for route in routes:
-                route.update(enabled=True, input_cost_per_million=1, output_cost_per_million=1)
+                route.update(
+                    enabled=True,
+                    model="offline-test-model",
+                    input_cost_per_million=1,
+                    output_cost_per_million=1,
+                )
         config["search"]["adapters"] = ["arxiv"]
         assert client.put("/api/settings", json=config).status_code == 200
         project = client.post(

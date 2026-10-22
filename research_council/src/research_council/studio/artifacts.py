@@ -119,6 +119,9 @@ def paper_sections(
 
 
 def export_zip(service: StudioService, identity: UUID) -> bytes:
+    import hashlib
+    import json
+
     if identity in service.jobs and not service.jobs[identity].done():
         raise RuntimeError("Wait for a checkpoint before export")
     run = service.repository.get_run(identity)
@@ -128,8 +131,8 @@ def export_zip(service: StudioService, identity: UUID) -> bytes:
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(directory.iterdir()):
             if path.is_file() and not path.is_symlink() and path.suffix != ".tmp":
-                archive.write(path, arcname=path.name)
-        import json
+                if path.name != "run_manifest.json":
+                    archive.write(path, arcname=path.name)
 
         archive.writestr(
             "studio_revisions.json",
@@ -159,4 +162,9 @@ def export_zip(service: StudioService, identity: UUID) -> bytes:
                 indent=2,
             ),
         )
+        manifest = json.loads((directory / "run_manifest.json").read_text(encoding="utf-8"))
+        manifest["files"] = {
+            name: hashlib.sha256(archive.read(name)).hexdigest() for name in archive.namelist()
+        }
+        archive.writestr("run_manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
     return output.getvalue()

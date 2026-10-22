@@ -281,6 +281,21 @@ class MarkdownExporter:
         write("final_report.md", "\n\n".join(report) + "\n")
         executions = self.repository.list_all("model_executions", ModelExecution, run.run_id)
         json_file(
+            "cost_report.json",
+            {
+                "run_id": str(run.run_id),
+                "provenance": run.provenance,
+                "budget_usd": run.budget_usd,
+                "estimated_model_cost_usd": sum(row.estimated_cost or 0 for row in executions),
+                "actual_billed_cost_usd": None,
+                "source_service_fees_usd": None,
+                "cost_complete": all(row.estimated_cost is not None for row in executions),
+                "live_budget_usage": self.repository.artifacts(run.run_id).get("live_budget_usage", {}),
+                "executions": [row.model_dump(mode="json") for row in executions],
+                "note": "Token-price estimates or reserved upper bounds; not a billing receipt. Source fees are not measured.",
+            },
+        )
+        json_file(
             "run_manifest.json",
             {
                 "run": run.model_dump(mode="json"),

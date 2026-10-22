@@ -1,0 +1,120 @@
+{
+  "prepared_at_utc": "2026-10-22T07:44:15.885394+00:00",
+  "base_commit": "487105bd0b3c75457df5fc24439fe3fd01bb4dec",
+  "branch": "research-council-studio",
+  "PILOT_CONFIG_READY": true,
+  "STUDIO_READY": true,
+  "PRACTICE_MODE_PASS": true,
+  "PROVIDER_CONFIG_READY": false,
+  "blockers": [
+    "Operator account-valid model IDs and current token prices not imported",
+    "Provider and source access NOT_TESTED"
+  ],
+  "PAID_CALLS": 0,
+  "LIVE_PILOT_EXECUTED": false,
+  "SRL": 0,
+  "local_project_id": "72918e68-7b9e-5fb9-b74d-a01200000001",
+  "local_research_runs_created": 0,
+  "local_operator_settings_unchanged": true,
+  "local_service_readiness": [
+    {
+      "service": "openai",
+      "configuration_status": "BLOCKED",
+      "credential_status": "MISSING",
+      "access_status": "NOT_TESTED",
+      "status": "BLOCKED",
+      "models": [],
+      "smoke_execution_ids": [],
+      "note": "Configuration/key presence does not verify service or model access."
+    },
+    {
+      "service": "anthropic",
+      "configuration_status": "BLOCKED",
+      "credential_status": "MISSING",
+      "access_status": "NOT_TESTED",
+      "status": "BLOCKED",
+      "models": [],
+      "smoke_execution_ids": [],
+      "note": "Configuration/key presence does not verify service or model access."
+    },
+    {
+      "service": "google",
+      "configuration_status": "BLOCKED",
+      "credential_status": "MISSING",
+      "access_status": "NOT_TESTED",
+      "status": "BLOCKED",
+      "models": [],
+      "smoke_execution_ids": [],
+      "note": "Configuration/key presence does not verify service or model access."
+    },
+    {
+      "service": "crossref",
+      "configuration_status": "BLOCKED",
+      "credential_status": "NOT_REQUIRED",
+      "access_status": "NOT_TESTED",
+      "status": "BLOCKED",
+      "models": [],
+      "smoke_execution_ids": [],
+      "note": "Configuration/key presence does not verify service or model access."
+    },
+    {
+      "service": "openalex",
+      "configuration_status": "BLOCKED",
+      "credential_status": "MISSING",
+      "access_status": "NOT_TESTED",
+      "status": "BLOCKED",
+      "models": [],
+      "smoke_execution_ids": [],
+      "note": "Configuration/key presence does not verify service or model access."
+    },
+    {
+      "service": "arxiv",
+      "configuration_status": "BLOCKED",
+      "credential_status": "NOT_REQUIRED",
+      "access_status": "NOT_TESTED",
+      "status": "BLOCKED",
+      "models": [],
+      "smoke_execution_ids": [],
+      "note": "Configuration/key presence does not verify service or model access."
+    }
+  ],
+  "verification": {
+    "backend": {
+      "passed": 216,
+      "live_deselected": 2,
+      "command": ".venv/Scripts/python.exe -m pytest -q -m 'not live'"
+    },
+    "ruff": "PASS",
+    "mypy": {
+      "status": "PASS",
+      "source_files": 116
+    },
+    "frontend_build": "PASS",
+    "frontend_lint": "PASS",
+    "frontend_unit_tests_passed": 3,
+    "playwright_tests_passed": 3,
+    "browser_report": "pilot01-playwright.json",
+    "practice_report": "pilot01-practice-result.json",
+    "pilot_opt_in_fixture": {
+      "test": "tests/test_pilot01.py::test_opt_in_reviews_reach_studio_with_fake_provider_and_keep_srl_zero",
+      "status": "PASS",
+      "human_reviews": 10,
+      "agent_classes": 20,
+      "all_models_fake": true,
+      "canonical_experiments_empty": true,
+      "srl": 0
+    },
+    "export_members_and_hashes": "PASS: tests/test_studio_artifacts.py",
+    "prepared_import_creates_no_run": "PASS: tests/test_pilot01.py",
+    "readiness_never_infers_access_from_key": "PASS: tests/test_pilot01.py",
+    "real_confirmation_required": "PASS: tests/test_studio_settings.py and Playwright"
+  },
+  "screenshots": {
+    "unconfigured_workspace_readiness": "../screenshots/pilot01-readiness-offline.png",
+    "practice_budget_zero_spend": "../screenshots/pilot01-cost-offline.png",
+    "mock_model_preflight_without_confirmation": "../screenshots/pilot01-preflight-offline.png"
+  },
+  "provider_smoke_executed": false,
+  "real_literature_benchmark_executed": false,
+  "note": "Offline fixtures and local configuration checks only; no scientific findings or model access certification."
+}

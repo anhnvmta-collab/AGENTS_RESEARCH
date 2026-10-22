@@ -1,0 +1,51 @@
+id: 72918e68-7b9e-5fb9-b74d-a01200000001
+title: Pilot 01 — CS for FHSS UAV detection, estimation and DOA
+topic: >-
+  Compressed Sensing for Real-Time Detection, Parameter Estimation and
+  Direction-of-Arrival Estimation of Frequency-Hopping UAV Signals
+  on Coherent SDR / FPGA / RFSoC Platforms.
+objective: >-
+  Build a bounded, traceable literature and evidence map, assess counterexamples
+  to scoped gaps, and propose falsifiable experiments only if novelty survives
+  adversarial review and canonical scientific gates. No publication claim in advance.
+questions:
+  - "RQ1: What compressed sensing (CS) models are used for FHSS detection?"
+  - "RQ2: Which sparse recovery algorithms are feasible for real-time use, under what measured assumptions?"
+  - "RQ3: How are hop frequency, dwell time and timing estimated?"
+  - "RQ4: How is direction of arrival (DOA) estimated for sparse/FHSS signals?"
+  - "RQ5: Which methods jointly estimate spectrum and angle?"
+  - "RQ6: What coherent multi-channel SDR architectures have been demonstrated?"
+  - "RQ7: What FPGA/RFSoC implementations exist, and what was actually measured?"
+  - "RQ8: What are the computational, memory, data movement and synchronization bottlenecks?"
+  - "RQ9: What literature specifically addresses UAV communication signals rather than generic FHSS?"
+  - "RQ10: What scoped gaps remain under approximately 500–1000 hops/s and real-time FPGA constraints?"
+domain: Compressed sensing, FHSS, array signal processing and embedded SDR
+keywords: [compressed sensing, sparse recovery, FHSS, frequency hopping, UAV, DOA, joint spectrum-angle estimation, coherent SDR, FPGA, Zynq, RFSoC, ADRV9009]
+constraints:
+  - "USER CONSTRAINT, NOT A FINDING: coherent multi-channel receiver."
+  - "USER CONSTRAINT, NOT A FINDING: FPGA / RFSoC / Zynq target."
+  - "USER CONSTRAINT, NOT A FINDING: FHSS approximately 500–1000 hops/s."
+  - "USER CONSTRAINT, NOT A FINDING: real-time processing desired; distinguish latency from throughput."
+  - "USER CONSTRAINT, NOT A FINDING: candidate platforms may include ADRV9009/Zynq and RFSoC."
+hardware_constraints: >-
+  Operator-specified design constraints only, not feasibility conclusions:
+  coherent multi-channel reception; FPGA/RFSoC/Zynq target; approximately
+  500–1000 hops/s; real-time processing desired; possible ADRV9009/Zynq
+  and RFSoC. Channel count, sample rate, bandwidth, calibration, resource
+  budget and acceptable end-to-end latency remain to be established.
+target_journal: To be selected after evidence review; no quartile or acceptance claim
+publication_type: Research article proposal
+date_range: Seminal work plus recent work through the actual search date; record all query date filters
+max_papers: 12
+mode: novelty
+budget: 5
+providers: [openai, anthropic, google]
+practice: false
+notes: >-
+  PREPARED ONLY. PAID_CALLS=0; LIVE_PILOT_EXECUTED=false; SRL=0.
+  Review docs/PILOT01_REVIEW_GUIDE.md at every human gate. Configuration,
+  credential presence and smoke tests cannot establish scientific readiness.
+  Scope negative claims to searched sources, terms, dates and accessible texts.
+  Separate sourced, derived and estimated hardware quantities; no invented measurements.
+  Named operator review is required for the plan, core papers, gaps, initial
+  novelty candidates, every novelty revision, experiment plan and final readiness.

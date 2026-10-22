@@ -113,6 +113,8 @@ class WorkflowEngine:
                 self.repository.checkpoint(run, {"state": state})
                 return run
             if state.pending_approval:
+                run.status = "PAUSED"
+                self.repository.checkpoint(run, {"state": state})
                 return run
             run.status = "RUNNING"
             self.repository.save_run(run)
@@ -188,6 +190,13 @@ class WorkflowEngine:
                 state = next_state
                 if heartbeat.done():
                     await heartbeat
+                if state.pending_approval:
+                    run.status = "PAUSED"
+                    state.events.append(
+                        WorkflowEvent(run_id=run_id, stage=stage.name, event="PAUSED")
+                    )
+                    self.repository.checkpoint(run, {"state": state})
+                    return run
                 run.stage += 1
                 state.events.append(
                     WorkflowEvent(run_id=run_id, stage=stage.name, event="STAGE_COMPLETED")

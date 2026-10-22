@@ -1,0 +1,71 @@
+# Copy to pilot01.operator.yaml (gitignored). This template intentionally blocks launch.
+# Set *_MODEL_ID in the local environment to IDs verified in YOUR provider accounts.
+# Fill the three anchored routes' current USD/1M token prices and review dates.
+# Never put API keys here. No provider/model access is asserted by this template.
+science_benchmark: CS_FHSS_DOA_FPGA # Domain policy only; does not execute a benchmark.
+research:
+  human_approval_required: true
+  novelty_review_each_revision: true
+  budget_usd: 5
+  max_model_calls: 80
+  max_queries: 36
+  max_core_papers: 12
+  min_novelty_evidence: 2
+  max_novelty_iterations: 3
+live_research_budget:
+  max_total_cost: 5 # Canonical configuration field for max_total_cost_usd.
+  max_model_calls: 80
+  max_search_calls: 500
+  max_core_papers: 12
+  max_deep_reads: 10
+  max_novelty_iterations: 3
+concurrency: {agents: 2, searches: 2, paper_reads: 2}
+search:
+  adapters: [crossref, openalex, arxiv]
+  results_per_query: 5
+  local_documents: []
+  contact_email: null
+  saturation_patience: 3
+  minimum_new_unique_rate: 0.02
+models:
+  SEARCH_PLANNING:
+    - &openai
+      enabled: true
+      provider: openai
+      model: ${OPENAI_MODEL_ID}
+      input_cost_per_million: null
+      output_cost_per_million: null
+      pricing_verified_on: null
+      max_output_tokens: 4096
+    - &google
+      enabled: true
+      provider: google
+      model: ${GOOGLE_MODEL_ID}
+      input_cost_per_million: null
+      output_cost_per_million: null
+      pricing_verified_on: null
+      max_output_tokens: 4096
+  PAPER_EXTRACTION:
+    - &anthropic
+      enabled: true
+      provider: anthropic
+      model: ${ANTHROPIC_MODEL_ID}
+      input_cost_per_million: null
+      output_cost_per_million: null
+      pricing_verified_on: null
+      max_output_tokens: 4096
+    - *openai
+  MATH_REASONING: [*openai, *anthropic]
+  HARDWARE_REASONING: [*openai, *google]
+  SYNTHESIS: [*openai, *anthropic]
+  NOVELTY_GENERATION: [*openai]
+  ADVERSARIAL_REVIEW: [*google]
+  CITATION_VERIFICATION: [*openai, *google]
+role_routes:
+  NoveltyJudge: [*anthropic, *google, *openai]
+  PaperScout: [*openai, *google]
+  CitationScout: [*openai, *google]
+  LocalDocumentScout: [*openai, *google]
+  PriorArtHunter: [*openai, *google]
+retries: 0
+timeout_seconds: 180 # Operator must review against the selected models; not access verification.

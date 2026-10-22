@@ -62,6 +62,7 @@ class WorkflowState(Schema):
     knowledge_map: ResearchKnowledgeMap | None = None
     synthesis: SynthesisOutput = Field(default_factory=SynthesisOutput)
     novelty_iteration: int = 0
+    novelty_review_terminal: bool = False
     pending_targeted_queries: list[str] = Field(default_factory=list)
     targeted_requests: list[TargetedSearchRequest] = Field(default_factory=list)
     completed_approvals: list[str] = Field(default_factory=list)

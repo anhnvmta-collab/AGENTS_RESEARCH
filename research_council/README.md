@@ -3,7 +3,10 @@
 **Research Council Studio:** local React/FastAPI workspace with all 20 agents, Practice Mode,
 human approvals and evidence inspection. See [Studio setup](docs/STUDIO.md),
 [final Studio audit](docs/STUDIO_FINAL_AUDIT.md) and [screenshots](docs/screenshots).
-Studio verification: 206 offline backend tests, 3 frontend unit tests and 2 Playwright tests
+Pilot 01 preparation: [readiness and operator steps](docs/PILOT01_READINESS.md),
+[review guide](docs/PILOT01_REVIEW_GUIDE.md), [unexecuted smoke plan](docs/PILOT01_SMOKE_TEST_PLAN.md),
+and [configuration template](config/pilot01.example.yaml). Provider access remains unverified.
+Studio verification: 216 offline backend tests, 3 frontend unit tests and 3 Playwright tests
 pass; paid model calls and live research executions are zero.
 
 Evidence-first scientific research workflows for RF, DSP, SDR, FPGA, RFSoC and extensible

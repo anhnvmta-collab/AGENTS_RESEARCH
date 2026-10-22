@@ -189,6 +189,13 @@ test("full Practice workflow, human reviews, evidence and adversarial novelty", 
   await expect(
     page.getByRole("button", { name: "Save", exact: true }),
   ).toBeDisabled();
+  await tab(page, "Cost");
+  await expect(page.getByText("BOUNDED RUN", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".stat").filter({ hasText: "spent" }),
+  ).toContainText("$0.00");
+  await expect(page.getByText("model calls", { exact: true })).toBeVisible();
+  await shot(page, "pilot01-cost-offline");
   const zip = await page.request.get("/api/runs/" + id + "/export");
   expect(zip.status()).toBe(200);
   expect(zip.headers()["content-type"]).toContain("application/zip");
@@ -203,6 +210,12 @@ test("full Practice workflow, human reviews, evidence and adversarial novelty", 
   await expect(
     page.getByText("BLOCKED", { exact: true }).first(),
   ).toBeVisible();
+  const readiness = page.getByRole("region", { name: "Service readiness" });
+  await expect(readiness.locator("tbody tr")).toHaveCount(6);
+  await expect(readiness.getByText("NOT_TESTED", { exact: true })).toHaveCount(
+    6,
+  );
+  await shot(page, "pilot01-readiness-offline");
   await shot(page, "studio-provider-settings");
   await mkdir("../../docs/audits", { recursive: true });
   await writeFile(
@@ -238,6 +251,118 @@ test("full Practice workflow, human reviews, evidence and adversarial novelty", 
   );
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
+});
+
+test("Pilot role overrides remain editable and real preflight discloses routes before confirmation", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("**/*", (route) =>
+    new URL(route.request().url()).hostname === "127.0.0.1"
+      ? route.continue()
+      : route.abort(),
+  );
+  const data = await (await page.request.get("/api/settings")).json();
+  const config = data.settings;
+  for (const routes of [
+    ...Object.values(config.models),
+    ...Object.values(config.role_routes),
+  ] as Data[][])
+    for (const route of routes)
+      Object.assign(route, {
+        enabled: true,
+        model: "offline-ui-" + route.provider,
+        input_cost_per_million: 1,
+        output_cost_per_million: 1,
+      });
+  const routes = config.models.SEARCH_PLANNING;
+  for (const role of [
+    "PaperScout",
+    "CitationScout",
+    "LocalDocumentScout",
+    "PriorArtHunter",
+  ])
+    config.role_routes[role] = [
+      routes.find((r: Data) => r.provider === "openai"),
+      routes.find((r: Data) => r.provider === "google"),
+    ];
+  config.research.novelty_review_each_revision = true;
+  config.search.adapters = ["crossref", "openalex", "arxiv"];
+  config.live_research_budget = {
+    max_total_cost: 5,
+    max_model_calls: 80,
+    max_search_calls: 500,
+    max_core_papers: 12,
+    max_deep_reads: 10,
+    max_novelty_iterations: 3,
+  };
+  expect(
+    (await page.request.put("/api/settings", { data: config })).status(),
+  ).toBe(200);
+  const project = await (
+    await page.request.post("/api/projects", {
+      data: {
+        title: "Pilot 01 preflight offline",
+        topic: "Pilot 01 preflight offline",
+        practice: false,
+      },
+    })
+  ).json();
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Providers & models", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "PaperScout route 0", exact: true })
+    .selectOption("google");
+  await expect(
+    page.getByRole("combobox", { name: "PaperScout route 0", exact: true }),
+  ).toHaveValue("google");
+  await page
+    .getByRole("combobox", { name: "PaperScout route 0", exact: true })
+    .selectOption("openai");
+  await page.getByRole("button", { name: "Save", exact: true }).first().click();
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get("/api/settings")).json()).settings
+          .role_routes.PaperScout[0].provider,
+    )
+    .toBe("openai");
+  await page
+    .locator(".sidebar")
+    .getByRole("button", { name: "Dashboard", exact: true })
+    .click();
+  await page
+    .getByRole("button")
+    .filter({ hasText: "Pilot 01 preflight offline" })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Configuration preflight" });
+  await expect(dialog).toBeVisible();
+  for (const term of [
+    "anthropic_blocked_roles",
+    "PaperScout",
+    "PriorArtHunter",
+    "role_routes",
+    "max_deep_reads",
+    "human_approval_required",
+    "novelty_review_each_revision",
+    "crossref",
+    "openalex",
+    "arxiv",
+    "offline-ui-openai",
+  ])
+    await expect(dialog).toContainText(term);
+  await expect(
+    dialog.getByRole("button", { name: "START REAL RESEARCH", exact: true }),
+  ).toBeVisible();
+  await shot(page, "pilot01-preflight-offline");
+  // Never confirm or start this configured real project.
+  expect(
+    (await (await page.request.get("/api/projects/" + project.id)).json()).runs,
+  ).toHaveLength(0);
+  expect(errors).toEqual([]);
 });
 
 test("Vietnamese project wizard, localization, theme and cooperative controls", async ({

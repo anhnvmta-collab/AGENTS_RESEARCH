@@ -1,4 +1,6 @@
+import hashlib
 import io
+import json
 import zipfile
 
 from fastapi.testclient import TestClient
@@ -34,4 +36,25 @@ def test_revision_and_draft_never_certify_science(tmp_path):
         assert exported.status_code == 200
         archive = zipfile.ZipFile(io.BytesIO(exported.content))
         assert "studio_revisions.json" in archive.namelist()
+        required = {
+            "research_plan.json",
+            "literature_matrix.csv",
+            "evidence.jsonl",
+            "claims.jsonl",
+            "research_gaps.md",
+            "novelty_candidates.md",
+            "prior_art_report.md",
+            "reviewer_report.md",
+            "hardware_feasibility.md",
+            "experiment_plan.md",
+            "ieee_paper_plan.md",
+            "citation_audit.csv",
+            "cost_report.json",
+            "run_manifest.json",
+        }
+        assert required <= set(archive.namelist())
+        manifest = json.loads(archive.read("run_manifest.json"))
+        assert set(manifest["files"]) == set(archive.namelist()) - {"run_manifest.json"}
+        for name, digest in manifest["files"].items():
+            assert hashlib.sha256(archive.read(name)).hexdigest() == digest
         assert all(".." not in name and "/" not in name for name in archive.namelist())

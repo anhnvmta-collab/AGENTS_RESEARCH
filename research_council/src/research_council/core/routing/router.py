@@ -77,12 +77,14 @@ class ModelRouter:
         if not routes:
             raise ValueError(f"No route for {profile}")
         last_error: Exception | None = None
+        fallback_reasons: list[str] = []
         for route in routes:
             if route.model == "CONFIGURE_ME":
                 raise ValueError("Configure a model ID before enabling a live route")
             provider = self.providers.get(route.provider)
             if provider is None:
                 last_error = ValueError("Provider unavailable")
+                fallback_reasons.append(f"ROUTE_FALLBACK:{route.provider}:PROVIDER_UNAVAILABLE")
                 continue
             limit = self.settings.retries if retries is None else retries
             for attempt in range(limit + 1):
@@ -112,6 +114,9 @@ class ModelRouter:
                         name=f"schema_fallback_{role}",
                     )
                     last_error = exc
+                    fallback_reasons.append(
+                        f"ROUTE_FALLBACK:{route.provider}:SchemaCompatibilityError"
+                    )
                     break
                 async with self.lock:
                     if (
@@ -142,6 +147,11 @@ class ModelRouter:
                         "DIFFERENT_PROVIDER_PREFERRED"
                         if provider.name != avoid_provider
                         else "SAME_PROVIDER_FALLBACK"
+                    )
+                if fallback_reasons:
+                    execution.routing_note = "; ".join(
+                        ([execution.routing_note] if execution.routing_note else [])
+                        + fallback_reasons
                     )
                 execution.estimated_cost = reservation
                 execution.cost_basis = (
@@ -245,6 +255,9 @@ class ModelRouter:
                     self.last_success[role] = execution
                     return result
                 if not retryable or attempt == limit:
+                    fallback_reasons.append(
+                        f"ROUTE_FALLBACK:{route.provider}:{execution.error_type}"
+                    )
                     break
                 backoff = min(
                     60,

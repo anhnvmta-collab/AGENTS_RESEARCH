@@ -40,6 +40,7 @@ class NoveltyLoop:
         max_iterations: int = 3,
         minimum_evidence: int = 2,
         execution_records: Callable[[], list[ModelExecution]] | None = None,
+        review_each_revision: bool = False,
     ) -> None:
         if max_iterations < 1:
             raise ValueError("Novelty loop needs a positive bound")
@@ -47,12 +48,15 @@ class NoveltyLoop:
         self.max_iterations = max_iterations
         self.gate = NoveltySurvivalGate(minimum_evidence)
         self.execution_records = execution_records
+        self.review_each_revision = review_each_revision
 
     async def run(
         self,
         state: WorkflowState,
         checkpoint: Callable[[WorkflowState], Awaitable[None]] | None = None,
     ) -> WorkflowState:
+        if state.pending_approval:
+            return state
         # Cached booleans are insufficient after resume or evidence changes.
         for cached in [item for item in state.gates if item.gate == 2 and item.passed]:
             candidate = next(
@@ -113,6 +117,9 @@ class NoveltyLoop:
                     for item in state.novelty_candidates
                 ):
                     return state
+
+        if self.review_each_revision and state.novelty_review_terminal:
+            return state
 
         def saturated() -> bool:
             return bool(state.saturation and state.saturation[-1].status == "SEARCH_SATURATED")
@@ -209,6 +216,17 @@ class NoveltyLoop:
                 if not survived and index + 1 < self.max_iterations
                 else []
             )
+            if self.review_each_revision:
+                state.novelty_review_terminal = (
+                    survived or not followups or index + 1 >= self.max_iterations
+                )
+                if index + 1 >= self.max_iterations and not survived:
+                    self.finish_unresolved(state, "Configured novelty iteration limit reached.")
+                kind = "candidate" if index == 0 else "revision"
+                state.pending_approval = f"novelty_{kind}_review_{index + 1}"
+                if checkpoint:
+                    await checkpoint(state)
+                return state
             if checkpoint:
                 await checkpoint(state)
             if survived:

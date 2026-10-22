@@ -36,13 +36,7 @@ export default function Providers({
         .flatMap(([, routes]) => routes)
         .find((r) => r.provider === provider) || {
         provider,
-        model: (
-          {
-            openai: "gpt-6.1-sol",
-            anthropic: "claude-sonnet-5-5",
-            google: "gemini-4-argon",
-          } as Record<string, string>
-        )[provider],
+        model: "CONFIGURE_ME",
         enabled: false,
         max_output_tokens: 4096,
       }
@@ -61,7 +55,7 @@ export default function Providers({
   }
   function reorder(profile: string, index: number, provider: string) {
     const next = structuredClone(config!);
-    const target = profile === "NoveltyJudge" ? next.role_routes : next.models;
+    const target = profile in next.role_routes ? next.role_routes : next.models;
     const routes = [...target[profile]];
     if (!provider) routes.splice(index, 1);
     else routes[index] = { ...providerRoute(provider) };
@@ -177,6 +171,43 @@ export default function Providers({
           );
         })}
       </div>
+      <section className="panel" aria-label="Service readiness">
+        <h3>Service readiness</h3>
+        <p>
+          CONFIGURED and CREDENTIAL_PRESENT are local checks. SMOKE_TESTED
+          requires a recorded successful minimal JSON request for the configured
+          model. NOT_TESTED means access remains unverified; BLOCKED means
+          configuration or a required credential is missing.
+        </p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Configuration</th>
+                <th>Credential</th>
+                <th>Access</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.readiness.map((r: Data) => (
+                <tr key={r.service}>
+                  <td>{r.service}</td>
+                  <td>{r.configuration_status}</td>
+                  <td>{r.credential_status}</td>
+                  <td>{r.access_status}</td>
+                  <td>
+                    <Badge tone={r.status === "BLOCKED" ? "BLOCKED" : ""}>
+                      {r.status}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section className="panel">
         <div className="panel-title">
           <h3>{t("routes")}</h3>
@@ -227,7 +258,7 @@ export default function Providers({
                       onChange={(e) => {
                         const next = structuredClone(config);
                         const target =
-                          profile === "NoveltyJudge"
+                          profile in next.role_routes
                             ? next.role_routes
                             : next.models;
                         target[profile].forEach(

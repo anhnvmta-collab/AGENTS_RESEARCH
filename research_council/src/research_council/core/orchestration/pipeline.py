@@ -610,6 +610,10 @@ class ResearchPipeline:
             max_iterations=self.settings.research.max_novelty_iterations,
             minimum_evidence=self.settings.research.min_novelty_evidence,
             execution_records=lambda: self.repository.list_model_executions(run.run_id),
+            review_each_revision=(
+                self.settings.research.human_approval_required
+                and self.settings.research.novelty_review_each_revision
+            ),
         ).run(state, checkpoint)
 
     async def experiments(self, run: ResearchRun, state: WorkflowState) -> WorkflowState:
