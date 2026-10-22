@@ -9,6 +9,7 @@ from research_council import agents
 from research_council.core.config import ResearchConfig, Route, Settings
 from research_council.providers.schema_transport import SchemaCompatibilityError, anthropic_schema
 from research_council.schemas.models import TaskProfile
+from research_council.studio.models import StudioError
 from research_council.studio.service import StudioService
 from research_council.validation.budget import LiveResearchBudget
 from research_council.validation.preflight import PROVIDER_KEYS
@@ -131,8 +132,9 @@ def validate(settings: Settings) -> list[str]:
 
 
 def save(service: StudioService, settings: Settings) -> dict[str, Any]:
-    if validate(settings):
-        raise ValueError("Invalid provider configuration")
+    errors = validate(settings)
+    if errors:
+        raise StudioError("; ".join(errors))
     service.store.put("settings", "operator", settings.model_dump(mode="json"))
     return view(service)
 

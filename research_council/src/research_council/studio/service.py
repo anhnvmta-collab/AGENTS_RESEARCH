@@ -46,6 +46,10 @@ class StudioService:
 
     def new_run(self, identity: UUID, confirmation: str = "") -> dict[str, Any]:
         project = self.project(identity)
+        if project.mode.value == "audit" and not project.audit_claim:
+            from research_council.studio.models import StudioError
+
+            raise StudioError("AUDIT requires an explicit contribution claim")
         settings = Settings()
         if not project.practice:
             from research_council.studio.settings import current, preflight
@@ -84,6 +88,7 @@ class StudioService:
         ]
         question = ResearchQuestion(
             topic=project.topic,
+            audit_claim=project.audit_claim,
             constraints=[
                 *project.constraints,
                 *project.questions,
@@ -137,6 +142,7 @@ class StudioService:
             run.config_fingerprint = settings.fingerprint()
             self.repository.checkpoint(run, {"settings": settings})
         self.store.put("control", str(identity), {"command": None})
+        self.store.put("worker_error", str(identity), {"run_id": str(identity), "resolved": True})
         self.jobs[identity] = asyncio.create_task(self.execute(identity))
         return self.snapshot(identity)
 
@@ -144,22 +150,53 @@ class StudioService:
         run = self.repository.get_run(identity)
         try:
             settings = settings_for_run(self.repository, identity)
-            async with Runtime(self.workspace, self.repository, settings, run) as pipeline:
+            async with Runtime(
+                self.workspace, self.repository, settings, run, fixture_delay_seconds=0.15
+            ) as pipeline:
                 engine = pipeline.engine(run.mode)
                 # Extra Studio review points supplement the existing engine approvals.
                 stages = []
+                plan_action = engine.stages[0].execute
+
+                async def studio_plan(record: ResearchRun, current: WorkflowState) -> WorkflowState:
+                    from research_council.agents.contracts import QuestionInput
+                    from research_council.agents.research_director import ResearchDirector
+
+                    await pipeline.call(
+                        ResearchDirector,
+                        QuestionInput(
+                            task="Recommend bounded research depth; requested mode remains authoritative.",
+                            question=record.question,
+                            mode=record.mode,
+                        ),
+                    )
+                    return await plan_action(record, current)
+
                 for stage in engine.stages:
                     approvals = stage.approvals_before
                     if stage.name == "analysis":
                         approvals += ("after_core_selection",)
                     if stage.name == "audit" and run.mode.value in {"deep", "novelty"}:
                         approvals += ("after_experiment_plan",)
-                    stages.append(Stage(stage.name, stage.execute, approvals))
+                    stages.append(
+                        Stage(
+                            stage.name,
+                            studio_plan if stage.name == "plan" else stage.execute,
+                            approvals,
+                        )
+                    )
                 engine.stages = stages
+                self.store.put("stages", str(identity), {"names": [stage.name for stage in stages]})
                 engine.control = lambda: self.command(identity)
                 result = await engine.resume(identity)
                 state = engine.load_state(identity)
                 MarkdownExporter(self.workspace, self.repository).export(result, state)
+                for document in self.store.list("document"):
+                    if document["project_id"] == str(run.project_id) and any(
+                        str(c.paper.paper_id) == document.get("paper_id") for c in state.candidates
+                    ):
+                        document.update(job_status="COMPLETED", run_id=str(identity))
+                        self.store.put("document", document["id"], document)
             if (
                 run.provenance == "fixture"
                 and state.pending_approval == "after_experiment_plan"
@@ -174,6 +211,7 @@ class StudioService:
                     item
                     for item in self.store.list("practice_design")
                     if item["run_id"] == str(identity)
+                    and item.get("question") == run.question.model_dump(mode="json")
                 ]
                 if not previous:
                     experiment = await discuss(
@@ -202,6 +240,7 @@ class StudioService:
                         str(identity),
                         {
                             "run_id": str(identity),
+                            "question": run.question.model_dump(mode="json"),
                             "experiments": [experiment["output"]],
                             "outline": paper["output"],
                             "scope": "ADVISORY_SYNTHETIC",
@@ -230,6 +269,7 @@ class StudioService:
         if identity in self.jobs and not self.jobs[identity].done():
             raise RuntimeError("Wait for the active checkpoint operation")
         run = self.repository.get_run(identity)
+        point = self.repository.artifacts(identity).get("state", {}).get("pending_approval")
         settings = settings_for_run(self.repository, identity)
         question = None
         if decision.action == "revise":
@@ -247,6 +287,7 @@ class StudioService:
             str(uuid4()),
             {
                 **decision.model_dump(mode="json"),
+                "point": point,
                 "run_id": str(identity),
                 "at": utcnow().isoformat(),
             },
@@ -265,7 +306,12 @@ class StudioService:
         run = self.repository.get_run(identity)
         state = WorkflowState.model_validate(self.repository.artifacts(identity).get("state", {}))
         practice_design = next(
-            (row for row in self.store.list("practice_design") if row["run_id"] == str(identity)),
+            (
+                row
+                for row in self.store.list("practice_design")
+                if row["run_id"] == str(identity)
+                and row.get("question") == run.question.model_dump(mode="json")
+            ),
             None,
         )
         return {
@@ -295,7 +341,7 @@ class StudioService:
                 (
                     row
                     for row in self.store.list("worker_error")
-                    if row.get("run_id") == str(identity)
+                    if row.get("run_id") == str(identity) and not row.get("resolved")
                 ),
                 None,
             ),
@@ -325,6 +371,41 @@ class StudioService:
                 if latest
                 else "IDLE"
             )
+            try:
+                stage_names = self.store.get("stages", str(identity))["names"]
+            except KeyError:
+                stage_names = []
+            stage_index = snapshot["run"]["stage"]
+            stage_name = stage_names[stage_index] if stage_index < len(stage_names) else ""
+            role_stages = {
+                "plan": ["ResearchDirector", "ResearchPlanner"],
+                "discovery": [
+                    "PerspectiveGenerator",
+                    "QueryPlanner",
+                    "PaperScout",
+                    "CitationScout",
+                    "LocalDocumentScout",
+                    "PaperTriage",
+                ],
+                "analysis": ["DeepReader", "MathDSPAnalyst", "HardwareArchitect"],
+                "gaps": ["GapMiner"],
+                "novelty": ["NoveltyGenerator", "PriorArtHunter", "ReviewerTwo", "NoveltyJudge"],
+                "experiments": ["ExperimentDesigner", "PaperArchitect"],
+                "audit": ["CitationAuditor"],
+                "synthesis": ["FinalSynthesizer"],
+            }
+            if snapshot["state"]["pending_approval"] and name in role_stages.get(stage_name, []):
+                status = "WAITING_FOR_HUMAN"
+            elif status == "RUNNING" and models and models[-1]["retry_count"] > 0:
+                status = "RETRYING"
+            for execution in executions:
+                if not execution["end_time"]:
+                    from datetime import datetime
+
+                    execution["elapsed_seconds"] = (
+                        utcnow()
+                        - datetime.fromisoformat(execution["start_time"].replace("Z", "+00:00"))
+                    ).total_seconds()
             result.append(
                 {
                     "name": name,
@@ -332,6 +413,7 @@ class StudioService:
                     "profile": role.task_profile.value,
                     "routes": routes,
                     "status": status,
+                    "current_route": models[-1] if models else routes[0] if routes else {},
                     "tasks_completed": sum(item["status"] == "SUCCESS" for item in executions),
                     "average_latency": sum(item["latency"] for item in executions)
                     / max(1, len(executions)),
@@ -363,7 +445,10 @@ class StudioService:
             "runs": [item["run"] for item in reversed(states)],
             "papers": sum(len(item["state"]["candidates"]) for item in states),
             "evidence": sum(len(item["state"]["evidence"]) for item in states),
-            "novelty": sum(len(item["state"]["novelty_candidates"]) for item in states),
+            "novelty": sum(
+                len({n["candidate_id"] for n in item["state"]["novelty_candidates"]})
+                for item in states
+            ),
             "reviews": sum(bool(item["state"]["pending_approval"]) for item in states),
             "running_agents": sum(
                 row["status"] == "RUNNING" for item in states for row in item["executions"]

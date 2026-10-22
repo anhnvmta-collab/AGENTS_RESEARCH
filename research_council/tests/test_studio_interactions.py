@@ -69,3 +69,30 @@ def test_sse_replay_is_persisted_and_safe(tmp_path):
             "/api/runs/" + run["run_id"] + "/events?once=true", headers={"Last-Event-ID": last}
         )
         assert "event:" not in replay.text
+
+
+async def test_live_operational_summary_exists_before_agent_finishes(repository):
+    import asyncio
+
+    from research_council.agents.contracts import QuestionInput
+    from research_council.agents.research_planner import ResearchPlanner
+    from research_council.core.config import Settings
+    from research_council.core.routing import ModelRouter
+    from research_council.providers.fake import FakeProvider
+    from research_council.schemas.models import AgentExecution
+
+    repo, run = repository
+    router = ModelRouter(Settings(), {"fake": FakeProvider(delay=0.1)}, repo, run.run_id)
+    task = asyncio.create_task(
+        ResearchPlanner(router).run(
+            QuestionInput(task="Plan bounded research", question=run.question)
+        )
+    )
+    await asyncio.sleep(0.02)
+    execution = repo.list_all("agent_executions", AgentExecution, run.run_id)[0]
+    assert execution.status == "RUNNING"
+    summary = repo.artifacts(run.run_id)["operation_" + str(execution.execution_id)]
+    assert summary["input_contract"] == "QuestionInput"
+    assert "untrusted_task_data" not in str(summary)
+    await task
+    assert repo.artifacts(run.run_id)["agent_output_" + str(execution.execution_id)]["objective"]

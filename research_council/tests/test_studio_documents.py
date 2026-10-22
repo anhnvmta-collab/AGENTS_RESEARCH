@@ -67,3 +67,50 @@ def test_uploads_are_bounded_parsed_and_contained(tmp_path, monkeypatch):
             == 422
         )
         assert len(list((tmp_path / "documents").rglob("*.pdf"))) == 1
+
+
+async def test_uploaded_pdf_reaches_real_local_scout(tmp_path):
+    from uuid import UUID
+
+    from fastapi import UploadFile
+    from starlette.datastructures import Headers
+
+    from research_council.studio.documents import upload
+    from research_council.studio.models import Decision, StudioProject
+    from research_council.studio.service import StudioService
+
+    service = StudioService(tmp_path)
+    project = StudioProject(
+        title="Local PDF study", topic="Synthetic local PDF study", mode="review"
+    )
+    service.save_project(project)
+    documents = await upload(
+        service,
+        project.id,
+        [
+            UploadFile(
+                io.BytesIO(pdf_bytes()),
+                filename="source.pdf",
+                headers=Headers({"content-type": "application/pdf"}),
+            )
+        ],
+    )
+    identity = UUID(service.new_run(project.id)["run"]["run_id"])
+    for _ in range(10):
+        await service.start(identity)
+        await service.jobs[identity]
+        snapshot = service.snapshot(identity)
+        if snapshot["run"]["status"] == "COMPLETED":
+            break
+        assert snapshot["state"]["pending_approval"]
+        service.decide(identity, Decision(action="approve", reviewer="Local PDF reviewer"))
+    assert any(
+        c["paper"]["paper_id"] == documents[0]["paper_id"] and c["paper"]["provenance"] == "local"
+        for c in snapshot["state"]["candidates"]
+    )
+    assert service.store.list("document")[0]["job_status"] == "COMPLETED"
+    assert any(
+        e["agent_id"] == "LocalDocumentScout" and e["status"] == "SUCCESS"
+        for e in snapshot["executions"]
+    )
+    service.repository.engine.dispose()

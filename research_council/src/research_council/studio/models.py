@@ -8,6 +8,10 @@ from pydantic import Field, field_validator
 from research_council.schemas.models import Mode, Schema, utcnow
 
 
+class StudioError(ValueError):
+    """A static, operator-facing application validation message (no provider payloads)."""
+
+
 class StudioProject(Schema):
     id: UUID = Field(default_factory=uuid4)
     title: str = Field(min_length=3, max_length=200)
@@ -26,6 +30,7 @@ class StudioProject(Schema):
     budget: float = Field(default=5, ge=0, le=1000)
     providers: list[Literal["openai", "anthropic", "google"]] = Field(default_factory=list)
     notes: str = Field(default="", max_length=10000)
+    audit_claim: str | None = Field(default=None, max_length=4000)
     practice: bool = True
     created_at: str = Field(default_factory=lambda: utcnow().isoformat())
 

@@ -31,9 +31,22 @@ export default function Providers({
     ...Object.entries(config.role_routes),
   ] as [string, Data[]][];
   function providerRoute(provider: string) {
-    return groups
-      .flatMap(([, routes]) => routes)
-      .find((r) => r.provider === provider)!;
+    return (
+      groups
+        .flatMap(([, routes]) => routes)
+        .find((r) => r.provider === provider) || {
+        provider,
+        model: (
+          {
+            openai: "gpt-6.1-sol",
+            anthropic: "claude-sonnet-5-5",
+            google: "gemini-4-argon",
+          } as Record<string, string>
+        )[provider],
+        enabled: false,
+        max_output_tokens: 4096,
+      }
+    );
   }
   function change(provider: string, key: string, value: unknown) {
     const next = structuredClone(config!);

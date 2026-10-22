@@ -109,6 +109,7 @@ class WorkflowEngine:
             command = self.control() if self.control else None
             if command == "cancel":
                 run.status = "REJECTED"
+                state.pending_approval = None
                 self.repository.checkpoint(run, {"state": state})
                 return run
             if state.pending_approval:
@@ -197,6 +198,11 @@ class WorkflowEngine:
                     self.trace.emit(
                         TraceEvent(run_id=str(run_id), event=stage.name, status="CHECKPOINTED")
                     )
+            command = self.control() if self.control else None
+            if command in {"pause", "cancel"}:
+                run.status = "PAUSED" if command == "pause" else "REJECTED"
+                self.repository.checkpoint(run, {"state": state})
+                return run
             run.status = "COMPLETED"
             state.events.append(WorkflowEvent(run_id=run_id, stage="workflow", event="COMPLETED"))
             self.repository.checkpoint(run, {"state": state})

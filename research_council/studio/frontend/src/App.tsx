@@ -69,7 +69,7 @@ export default function App() {
   );
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, page]);
   useEffect(() => {
     window.history.replaceState(
       null,
@@ -85,10 +85,10 @@ export default function App() {
     localStorage.setItem("lang", lang);
     document.documentElement.lang = lang;
   }, [lang]);
-  async function openProject(project: Data) {
+  async function openProject(project: Data, forceNew = false) {
     try {
       const details = await api("/projects/" + project.id);
-      if (!project.practice && !details.runs.length) {
+      if (!project.practice && (!details.runs.length || forceNew)) {
         const report = await api(
           "/projects/" + project.id + "/preflight",
           "POST",
@@ -96,9 +96,10 @@ export default function App() {
         setPreflight({ ...report, project });
         return;
       }
-      const snapshot = details.runs[0]
-        ? { run: details.runs[0] }
-        : await api("/projects/" + project.id + "/runs", "POST", {});
+      const snapshot =
+        details.runs[0] && !forceNew
+          ? { run: details.runs[0] }
+          : await api("/projects/" + project.id + "/runs", "POST", {});
       setRunId(snapshot.run.run_id);
       setPage("workspace");
     } catch (e) {
@@ -349,6 +350,12 @@ export default function App() {
             )}
             {page === "workspace" && (
               <Workspace
+                key={runId}
+                newRun={(id) => {
+                  api("/projects/" + id)
+                    .then((project) => openProject(project, true))
+                    .catch((e) => setError(e.message));
+                }}
                 runId={runId}
                 back={() => {
                   setPage("dashboard");

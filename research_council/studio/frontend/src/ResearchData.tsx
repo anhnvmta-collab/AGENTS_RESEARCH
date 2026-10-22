@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, ArrowRight } from "lucide-react";
 import { api, short, type Data } from "./api";
 import { Badge, Empty, Json } from "./App";
@@ -212,6 +212,21 @@ export function ResearchData({
     [category, setCategory] = useState<Data | null>(null),
     [uploads, setUploads] = useState<Data[]>([]),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const refresh = () =>
+      api("/projects/" + run.project_id)
+        .then((p) => {
+          if (active) setUploads(p.documents);
+        })
+        .catch((e) => onError(e.message));
+    refresh();
+    const timer = setInterval(refresh, 2500);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [run.project_id, onError]);
   async function upload(files: FileList | File[] | null) {
     if (!files) return;
     setBusy(true);

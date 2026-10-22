@@ -142,6 +142,7 @@ export const en = {
   rejectGap: "Reject gap",
   addNote: "Add researcher note",
   newRun: "New run",
+  auditClaim: "Contribution claim to audit",
   evidenceRequired: "Evidence required",
   syntheticAdvisory:
     "Advisory learning artifacts; canonical scientific gates remain blocked.",
@@ -159,6 +160,7 @@ export const vi: Record<keyof typeof en, string> = {
   rejectGap: "Bác bỏ khoảng trống",
   addNote: "Thêm ghi chú",
   newRun: "Lượt nghiên cứu mới",
+  auditClaim: "Khẳng định đóng góp cần kiểm tra",
   evidenceRequired: "Cần bằng chứng",
   syntheticAdvisory:
     "Tài liệu tư vấn để thực hành; các cổng khoa học vẫn bị chặn.",

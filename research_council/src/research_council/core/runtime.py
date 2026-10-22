@@ -128,7 +128,13 @@ def create_run(
 
 class Runtime:
     def __init__(
-        self, workspace: Path, repository: SQLRepository, settings: Settings, run: ResearchRun
+        self,
+        workspace: Path,
+        repository: SQLRepository,
+        settings: Settings,
+        run: ResearchRun,
+        *,
+        fixture_delay_seconds: float = 0,
     ) -> None:
         self.workspace, self.repository, self.settings, self.run = (
             workspace,
@@ -144,6 +150,7 @@ class Runtime:
             ),
         )
         self.live_budget: BudgetLedger | None = None
+        self.fixture_delay_seconds = fixture_delay_seconds
         if settings.live_research_budget:
             prior = repository.artifacts(run.run_id).get("live_budget_usage", {})
             usage = BudgetUsage.model_validate(prior)
@@ -188,7 +195,8 @@ class Runtime:
             raise ValueError("Scientific live validation has no explicit paid API confirmation")
         providers: dict[str, BaseLLMProvider] = {
             "fake": FakeProvider(
-                responder=synthetic_response if self.run.provenance == "fixture" else None
+                responder=synthetic_response if self.run.provenance == "fixture" else None,
+                delay=self.fixture_delay_seconds if self.run.provenance == "fixture" else 0,
             )
         }
         adapters: list[SearchAdapter] = []

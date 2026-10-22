@@ -161,6 +161,17 @@ export function ProjectWizard({
         </div>
         {step === 2 && (
           <>
+            {form.mode === "audit" && (
+              <label>
+                {t("auditClaim")}
+                <textarea
+                  value={form.audit_claim || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, audit_claim: e.target.value })
+                  }
+                />
+              </label>
+            )}
             <label className="check section-space">
               <input
                 type="checkbox"
@@ -207,7 +218,13 @@ export function ProjectWizard({
           ) : (
             <button
               className="primary"
-              disabled={busy || form.title.length < 3 || form.topic.length < 3}
+              disabled={
+                busy ||
+                form.title.length < 3 ||
+                form.topic.length < 3 ||
+                (form.mode === "audit" &&
+                  (form.audit_claim || "").trim().length < 3)
+              }
               onClick={save}
             >
               {t("create")}

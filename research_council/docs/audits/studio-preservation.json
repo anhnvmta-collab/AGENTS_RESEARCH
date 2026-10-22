@@ -1,0 +1,45 @@
+{
+  "base": "6c089bec1eef68c3aaaee25a86d44d933f0393cd",
+  "protected_paths_unchanged": [
+    "research_council/src/research_council/core/gates",
+    "research_council/src/research_council/core/integrity.py",
+    "research_council/src/research_council/core/orchestration/novelty.py",
+    "research_council/src/research_council/core/human_review.py",
+    "research_council/src/research_council/schemas/models.py",
+    "research_council/src/research_council/validation/readiness.py",
+    "research_council/benchmarks",
+    "research_council/docs/phases",
+    "research_council/docs/FINAL_IMPLEMENTATION_AUDIT.md",
+    "research_council/src/research_council/storage"
+  ],
+  "milestones": [
+    "STUDIO-11 verify browser workflow, capture actual screens and publish final audit",
+    "STUDIO-10 harden localhost boundary, localize controls and preserve named scientific reviews",
+    "STUDIO-9 verify full zero-network practice and gated advisory learning artifacts",
+    "STUDIO-8 validate provider routing, Claude schema transport and bounded real preflight",
+    "STUDIO-7 add hardware provenance and revisioned experiment and paper workspaces",
+    "STUDIO-6 visualize grounded gaps and adversarial novelty revisions",
+    "STUDIO-5 add paper library, bounded PDF ingestion and evidence traceability",
+    "STUDIO-4 expose real agent contracts, interactions and replayable SSE events",
+    "STUDIO-3 connect projects, named approvals and cooperative run controls",
+    "STUDIO-2 build localized React shell and dashboard",
+    "STUDIO-1 add secure local FastAPI application service",
+    "STUDIO-0 define application architecture and API contract"
+  ],
+  "phase_reports": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "paid_model_calls_made": 0,
+  "live_research_executed": false
+}

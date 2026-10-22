@@ -35,6 +35,7 @@ export function AgentViews({
     [mode, setMode] = useState("discuss"),
     [input, setInput] = useState(""),
     [history, setHistory] = useState<Data[]>([]),
+    [artifacts, setArtifacts] = useState<Data[]>([]),
     [busy, setBusy] = useState(false),
     [reviewer, setReviewer] = useState(""),
     [comment, setComment] = useState("");
@@ -55,6 +56,12 @@ export function AgentViews({
     const timer = setInterval(refresh, 1800);
     return () => clearInterval(timer);
   }, [refresh]);
+  useEffect(() => {
+    if (!selected) return;
+    api<Data[]>("/runs/" + runId + "/agents/" + selected + "/artifacts")
+      .then(setArtifacts)
+      .catch((e) => onError(e.message));
+  }, [runId, selected, onError]);
   async function send() {
     setBusy(true);
     try {
@@ -87,6 +94,7 @@ export function AgentViews({
     }
   }
   const agent = agents.find((a) => a.name === selected);
+  if (!agents.length) return <Empty />;
   return (
     <>
       <div className="panel-title">
@@ -192,6 +200,18 @@ export function AgentViews({
                   <Json value={agent.output_contract} />
                 </details>
                 <ExecutionTable agents={[agent]} />
+                <details>
+                  <summary>
+                    {t("output")} / validated agent artifacts (before canonical
+                    gates)
+                  </summary>
+                  {artifacts.map((a) => (
+                    <div key={a.execution_id}>
+                      <Badge>{short(a.execution_id)}</Badge>
+                      <Json value={a.output} />
+                    </div>
+                  ))}
+                </details>
                 <h4 className="section-space">{t("related")}</h4>
                 <Json value={agent.related_evidence} />
               </div>

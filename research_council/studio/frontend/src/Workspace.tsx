@@ -36,11 +36,13 @@ export const tabs: TextKey[] = [
 export default function Workspace({
   runId,
   back,
+  newRun,
   onError,
 }: {
   runId: string;
   back: () => void;
   onError: (error: string) => void;
+  newRun: (projectId: string) => void;
 }) {
   const t = useText(),
     [snapshot, setSnapshot] = useState<Data | null>(null),
@@ -114,7 +116,18 @@ export default function Workspace({
           CHECKPOINT {run.stage} · {state.pending_approval || "WORKFLOW"}
         </span>
       </div>
+      {snapshot.worker_error && (
+        <div role="alert" className="error">
+          {snapshot.worker_error.error_type} · {t("logs")}
+        </div>
+      )}
       <div className="row section-space">
+        <button
+          disabled={busy || snapshot.worker_active}
+          onClick={() => newRun(run.project_id)}
+        >
+          {t("newRun")}
+        </button>
         <button
           className="primary"
           disabled={busy || run.status !== "CREATED"}

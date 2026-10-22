@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC
+from contextvars import ContextVar
 from pathlib import Path
 from time import perf_counter
 from typing import Any, ClassVar, Generic, TypeVar
+from uuid import UUID, uuid5
 
 from pydantic import Field
 
@@ -26,6 +28,7 @@ class OperationalSummary(Schema):
     output_counts: dict[str, int] = Field(default_factory=dict)
     paper_ids: list[str] = Field(default_factory=list)
     tools_used: list[str] = Field(default_factory=list)
+    active_tool: str | None = None
 
 
 class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
@@ -52,7 +55,9 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
         self.tools = tools or ToolRegistry()
         self.trace = trace
         self.avoid_provider = avoid_provider
-        self.tools_used: list[str] = []
+        self.operation: ContextVar[tuple[UUID, OperationalSummary] | None] = ContextVar(
+            "agent_operation", default=None
+        )
 
     def validate_input(self, value: InputT) -> InputT:
         return self.input_schema.model_validate(value.model_dump())
@@ -98,6 +103,8 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
             paper_ids=[str(item.get("paper_id")) for item in payload.get("papers", [])]
             + ([str(payload["paper"]["paper_id"])] if "paper" in payload else []),
         )
+        token = self.operation.set((execution.execution_id, observation))
+        self._observe(execution.execution_id, observation)
         try:
             validated = self.validate_input(value)
             result = self.validate_output(await self.execute(validated))
@@ -112,6 +119,13 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
                 for key, item in result.model_dump().items()
                 if isinstance(item, list)
             }
+            self.router.repository.save(
+                "artifacts",
+                uuid5(execution.execution_id, "structured-output"),
+                result,
+                self.router.run_id,
+                name=f"agent_output_{execution.execution_id}",
+            )
             return result
         except Exception as exc:
             execution.status = "FAILED"
@@ -120,7 +134,7 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
         finally:
             execution.end_time = utcnow()
             execution.latency = perf_counter() - started
-            observation.tools_used = self.tools_used
+            self.operation.reset(token)
             self.router.repository.save(
                 "artifacts",
                 execution.execution_id,
@@ -146,5 +160,21 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
                 )
 
     async def invoke_tool(self, name: str, value: Schema) -> Any:
-        self.tools_used.append(name)
-        return await self.tools.invoke(name, value, allowlist=self.allowed_tools)
+        operation = self.operation.get()
+        if operation:
+            identity, summary = operation
+            summary.tools_used.append(name)
+            summary.active_tool = name
+            self._observe(identity, summary)
+        try:
+            return await self.tools.invoke(name, value, allowlist=self.allowed_tools)
+        finally:
+            if operation:
+                identity, summary = operation
+                summary.active_tool = None
+                self._observe(identity, summary)
+
+    def _observe(self, identity: UUID, summary: OperationalSummary) -> None:
+        self.router.repository.save(
+            "artifacts", identity, summary, self.router.run_id, name=f"operation_{identity}"
+        )

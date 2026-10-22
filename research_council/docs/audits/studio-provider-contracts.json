@@ -1,0 +1,162 @@
+[
+  {
+    "agent": "ResearchDirector",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "ResearchPlanner",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "PerspectiveGenerator",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "QueryPlanner",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "PaperScout",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "BLOCKED",
+    "reason": "BLOCKED_UNION_LIMIT:21>16",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "CitationScout",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "BLOCKED",
+    "reason": "BLOCKED_UNION_LIMIT:21>16",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "LocalDocumentScout",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "BLOCKED",
+    "reason": "BLOCKED_UNION_LIMIT:21>16",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "PaperTriage",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "DeepReader",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "MathDSPAnalyst",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "HardwareArchitect",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "GapMiner",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "NoveltyGenerator",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "PriorArtHunter",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "BLOCKED",
+    "reason": "BLOCKED_UNION_LIMIT:29>16",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "ReviewerTwo",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "NoveltyJudge",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "ExperimentDesigner",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "PaperArchitect",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "CitationAuditor",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY_WITH_SCHEMA_TRANSFORM",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  },
+  {
+    "agent": "FinalSynthesizer",
+    "openai": "READY",
+    "google": "READY",
+    "anthropic": "READY",
+    "reason": "Canonical Pydantic validation after reversible transport decode",
+    "verification": "OFFLINE_CONTRACT_ONLY"
+  }
+]

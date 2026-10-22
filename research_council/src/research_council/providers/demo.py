@@ -130,6 +130,15 @@ def synthetic_response(request: LLMRequest) -> LLMResponse:
             why_prior_methods_insufficient="Not established by real sources",
             proposed_method="Design a synthetic latency experiment",
             validation_plan="Compare synthetic baselines; do not report measured results.",
+            revision_summary="Synthetic proposal revision "
+            + str(max((item["revision"] for item in prior), default=0) + 1),
+            change_reason="; ".join(data.get("required_changes", []))
+            or "Initial exploratory training proposal; no scientific novelty established.",
+            implementation_change=[
+                "Define latency experiment inputs",
+                "Add deadline and fixed-point ablations",
+                "Pre-register failure cases and reproducibility checks",
+            ][min(len(prior), 2)],
         )
         result = {"candidates": [candidate.model_dump(mode="json")]}
     elif role == "PriorArtHunter":

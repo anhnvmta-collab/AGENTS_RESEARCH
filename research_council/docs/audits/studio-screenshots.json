@@ -1,0 +1,62 @@
+[
+  {
+    "file": "screenshots/studio-agents.png",
+    "bytes": 281085,
+    "sha256": "1d84172defe2b35e69864d6da824006f75619f8a40697336470beca3155a8b1d"
+  },
+  {
+    "file": "screenshots/studio-dashboard.png",
+    "bytes": 175649,
+    "sha256": "f4e65096905cf936845e392c03029752ddf12a5e28d5202bf762ac0a1f866157"
+  },
+  {
+    "file": "screenshots/studio-evidence-explorer.png",
+    "bytes": 88563,
+    "sha256": "a099087d9aed6cf7f1942ca20d3205c13d84a7a1584cfc7ccc92c2eee104489c"
+  },
+  {
+    "file": "screenshots/studio-gap-board.png",
+    "bytes": 85240,
+    "sha256": "728597cac98485fc3c6bdab7d18c242426b5aab181a55502ec4d5b460fb90a22"
+  },
+  {
+    "file": "screenshots/studio-hardware-lab.png",
+    "bytes": 123006,
+    "sha256": "eb34e3c6b4c0ab6663978a5940795a4fff58ddcb5de8307c3d88f79124bcb8ee"
+  },
+  {
+    "file": "screenshots/studio-novelty-battle.png",
+    "bytes": 146804,
+    "sha256": "8f4fd34b0e02452f5e9658357799a0223b81b81201b27410a58f0fd7cd8e7667"
+  },
+  {
+    "file": "screenshots/studio-novelty-lab.png",
+    "bytes": 132498,
+    "sha256": "8f9e7b385b800d703f9f419b3a0061719f362d861e51497e5fec33005dcc2a63"
+  },
+  {
+    "file": "screenshots/studio-paper-builder.png",
+    "bytes": 122830,
+    "sha256": "23dbbb2103424588ebc62ce0ef952be2f743f9560c96dcf187b4767fcb03d5cc"
+  },
+  {
+    "file": "screenshots/studio-paper-library.png",
+    "bytes": 94196,
+    "sha256": "9fe89cb9f62fde676f293607252a5fd5f38347466eab7a529f142d84a79c14d2"
+  },
+  {
+    "file": "screenshots/studio-practice-completed.png",
+    "bytes": 150174,
+    "sha256": "916cbc63d68a6e0b79c4d6ca93826bc52532f2ecf9ae6d7c1df7b5a22a3330a9"
+  },
+  {
+    "file": "screenshots/studio-provider-settings.png",
+    "bytes": 234168,
+    "sha256": "350f0a9e0d5688bdc99a31f0d99daeb7456bfb4dd6f12f5963c9d9fc31fa9164"
+  },
+  {
+    "file": "screenshots/studio-workflow.png",
+    "bytes": 571401,
+    "sha256": "46de46fe9728e3bb28c6126d011be7419a3561d2a5746938f6a5cd74fc592380"
+  }
+]

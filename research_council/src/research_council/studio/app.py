@@ -18,6 +18,7 @@ from research_council.studio.models import (
     Interaction,
     Revision,
     StartRequest,
+    StudioError,
     StudioProject,
 )
 from research_council.studio.security import BodyLimitMiddleware
@@ -87,7 +88,14 @@ def create_app(
 
     @app.exception_handler(ValueError)
     async def invalid(request: Request, exc: ValueError) -> JSONResponse:
-        return JSONResponse({"detail": "Invalid operation or typed input"}, status_code=422)
+        return JSONResponse(
+            {
+                "detail": str(exc)
+                if isinstance(exc, StudioError)
+                else "Invalid operation or typed input"
+            },
+            status_code=422,
+        )
 
     @app.exception_handler(RuntimeError)
     async def conflict(request: Request, exc: RuntimeError) -> JSONResponse:
@@ -225,6 +233,22 @@ def create_app(
     def agents(identity: UUID) -> list[dict[str, Any]]:
         return service.agents(identity)
 
+    @app.get("/api/runs/{identity}/agents/{agent}/artifacts")
+    def agent_artifacts(identity: UUID, agent: str) -> Any:
+        from research_council.schemas.models import AgentExecution
+        from research_council.studio.interactions import agent_class
+
+        agent_class(agent)
+        artifacts = service.repository.artifacts(identity)
+        return [
+            {
+                "execution_id": row.execution_id,
+                "output": artifacts.get(f"agent_output_{row.execution_id}"),
+            }
+            for row in service.repository.list_all("agent_executions", AgentExecution, identity)
+            if row.agent_id == agent
+        ]
+
     @app.get("/api/runs/{identity}/decisions")
     def decisions(identity: UUID) -> Any:
         service.repository.get_run(identity)
@@ -354,8 +378,14 @@ def create_app(
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    import mimetypes
+
     from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
+
+    # Windows registry associations may otherwise label JavaScript as text/plain.
+    mimetypes.add_type("text/javascript", ".js")
+    mimetypes.add_type("text/javascript", ".mjs")
 
     frontend = Path(__file__).parent / "static"
     if not (frontend / "index.html").is_file():

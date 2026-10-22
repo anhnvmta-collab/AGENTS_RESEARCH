@@ -36,3 +36,11 @@ def test_errors_bounds_and_headers_do_not_echo_secrets(tmp_path):
             == 422
         )
         assert client.get("/api/files?path=C:/Windows/win.ini").status_code == 404
+        from pathlib import Path
+
+        frontend = Path(__file__).parents[1] / "studio/frontend/dist/assets"
+        if frontend.is_dir():
+            asset = next(frontend.glob("*.js"))
+            response = client.get("/assets/" + asset.name)
+            assert response.status_code == 200
+            assert "javascript" in response.headers["content-type"]
