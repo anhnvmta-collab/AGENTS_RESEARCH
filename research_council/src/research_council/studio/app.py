@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
+from research_council.core.config import Settings
 from research_council.studio.models import (
     Decision,
     Interaction,
@@ -77,6 +78,30 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     @app.get("/api/dashboard")
     def dashboard() -> dict[str, Any]:
         return service.dashboard()
+
+    @app.get("/api/settings")
+    def settings() -> Any:
+        from research_council.studio.settings import view
+
+        return view(service)
+
+    @app.put("/api/settings")
+    def save_settings(request: Settings) -> Any:
+        from research_council.studio.settings import save
+
+        return save(service, request)
+
+    @app.post("/api/projects/{identity}/preflight")
+    def preflight(identity: UUID) -> Any:
+        from research_council.studio.settings import preflight
+
+        return preflight(service, identity)
+
+    @app.get("/api/runs/{identity}/cost")
+    def cost(identity: UUID) -> Any:
+        from research_council.studio.settings import cost
+
+        return cost(service, identity)
 
     @app.get("/api/projects")
     def projects() -> list[dict[str, Any]]:

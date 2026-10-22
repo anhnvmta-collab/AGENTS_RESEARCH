@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from research_council.core.config import Route, Settings
 from research_council.core.tracing import TraceEvent, TraceSink
 from research_council.providers.base import BaseLLMProvider, LLMRequest, LLMResponse, ProviderError
+from research_council.providers.schema_transport import SchemaCompatibilityError
 from research_council.repositories.store import SQLRepository
 from research_council.schemas.models import ModelExecution, Schema, TaskProfile, utcnow
 from research_council.validation.budget import BudgetLedger
@@ -93,7 +94,25 @@ class ModelRouter:
                     output_schema=schema.model_json_schema(),
                     max_output_tokens=route.max_output_tokens,
                 )
-                reservation = self._reservation(route, request)
+                try:
+                    reservation = self._reservation(route, request)
+                except SchemaCompatibilityError as exc:
+                    from uuid import uuid4
+
+                    class CompatibilityFallback(Schema):
+                        provider: str
+                        role: str
+                        status: str
+
+                    self.repository.save(
+                        "artifacts",
+                        uuid4(),
+                        CompatibilityFallback(provider=provider.name, role=role, status=str(exc)),
+                        self.run_id,
+                        name=f"schema_fallback_{role}",
+                    )
+                    last_error = exc
+                    break
                 async with self.lock:
                     if (
                         self.calls >= self.settings.research.max_model_calls
@@ -147,6 +166,7 @@ class ModelRouter:
                         "CONTINUATION",
                         "blocked",
                         "content_filter",
+                        "refusal",
                     ):
                         raise ProviderError()
                     result = schema.model_validate_json(response.text)
@@ -240,9 +260,7 @@ class ModelRouter:
         if route.input_cost_per_million is None or route.output_cost_per_million is None:
             raise ValueError("Live routes need configured token prices for budget enforcement")
         # Bytes are a conservative text-token bound; account for schema and request overhead.
-        input_bound = (
-            len((request.system + request.user + str(request.output_schema)).encode()) + 1024
-        )
+        input_bound = self.providers[route.provider].input_byte_bound(request)
         return (
             input_bound * route.input_cost_per_million
             + route.max_output_tokens * route.output_cost_per_million

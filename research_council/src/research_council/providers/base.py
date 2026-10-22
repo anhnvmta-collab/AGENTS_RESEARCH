@@ -47,6 +47,9 @@ class BaseLLMProvider(ABC):
     name: str
     native_streaming = False
 
+    def input_byte_bound(self, request: LLMRequest) -> int:
+        return len((request.system + request.user + str(request.output_schema)).encode()) + 1024
+
     @abstractmethod
     async def generate(self, request: LLMRequest) -> LLMResponse: ...
 

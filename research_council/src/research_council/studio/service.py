@@ -31,12 +31,37 @@ class StudioService:
 
     def new_run(self, identity: UUID, confirmation: str = "") -> dict[str, Any]:
         project = self.project(identity)
-        if not project.practice:
-            raise ValueError("Real mode requires provider preflight and explicit confirmation")
         settings = Settings()
+        if not project.practice:
+            from research_council.studio.settings import current, preflight
+
+            settings = current(self)
+            if (
+                confirmation != "START REAL RESEARCH"
+                or not preflight(self, identity, settings)["ready"]
+            ):
+                raise ValueError("Real mode requires successful preflight and START REAL RESEARCH")
+            if project.providers:
+                for routes in [*settings.models.values(), *settings.role_routes.values()]:
+                    for route in routes:
+                        if route.provider not in project.providers:
+                            route.enabled = False
+            if settings.live_research_budget:
+                cap = settings.live_research_budget
+                cap.max_total_cost = min(cap.max_total_cost, project.budget)
+                cap.max_core_papers = min(cap.max_core_papers, project.max_papers)
+                settings.research.budget_usd = min(settings.research.budget_usd, cap.max_total_cost)
+                settings.research.max_model_calls = min(
+                    settings.research.max_model_calls, cap.max_model_calls
+                )
+                settings.research.max_core_papers = min(
+                    settings.research.max_core_papers, cap.max_core_papers
+                )
         settings.research.human_approval_required = True
-        settings.research.max_core_papers = project.max_papers
-        settings.research.budget_usd = project.budget
+        settings.research.max_core_papers = min(
+            settings.research.max_core_papers, project.max_papers
+        )
+        settings.research.budget_usd = min(settings.research.budget_usd, project.budget)
         settings.search.local_documents = [
             item["path"]
             for item in self.store.list("document")
@@ -59,10 +84,18 @@ class StudioService:
             question,
             project.mode,
             settings,
-            demo=True,
+            demo=project.practice,
+            live=not project.practice,
+            confirm_paid_apis=not project.practice,
             project=ResearchProject(project_id=identity, title=project.title, question=question),
         )
         self.repository.checkpoint(run, {"state": WorkflowState()})
+        if not project.practice:
+            self.store.put(
+                "real_consent",
+                str(run.run_id),
+                {"confirmation": "START REAL RESEARCH", "at": utcnow().isoformat()},
+            )
         return self.snapshot(run.run_id)
 
     def command(self, identity: UUID) -> str | None:
@@ -77,6 +110,8 @@ class StudioService:
             raise RuntimeError("Run is already executing")
         if run.status in {"COMPLETED", "REJECTED", "BUDGET_EXHAUSTED"}:
             raise ValueError("Terminal run cannot resume")
+        if run.provenance == "live":
+            self.store.get("real_consent", str(identity))
         if run.stage == 0 and not self.repository.list_model_executions(identity):
             settings = settings_for_run(self.repository, identity)
             settings.search.local_documents = [

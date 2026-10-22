@@ -14,6 +14,7 @@ from research_council.providers.base import (
     ProviderError,
     ToolCall,
 )
+from research_council.providers.schema_transport import TRANSPORT_INSTRUCTION, anthropic_schema
 
 
 class HTTPProvider(BaseLLMProvider):
@@ -103,16 +104,34 @@ class AnthropicProvider(HTTPProvider):
     key_env = "ANTHROPIC_API_KEY"
     endpoint = "https://api.anthropic.com/v1/messages"
 
+    def input_byte_bound(self, request: LLMRequest) -> int:
+        codec = anthropic_schema(request.output_schema) if request.output_schema else None
+        return (
+            len(
+                (
+                    request.system
+                    + request.user
+                    + (TRANSPORT_INSTRUCTION if codec and codec.has_maps else "")
+                    + str(codec.wire if codec else None)
+                ).encode()
+            )
+            + 2048
+        )
+
     async def generate(self, request: LLMRequest) -> LLMResponse:
+        codec = anthropic_schema(request.output_schema) if request.output_schema else None
         body: dict[str, Any] = {
             "model": request.model,
-            "system": request.system,
+            "system": request.system + (TRANSPORT_INSTRUCTION if codec and codec.has_maps else ""),
             "messages": [{"role": "user", "content": request.user}],
             "max_tokens": request.max_output_tokens,
         }
         if request.output_schema:
             body["output_config"] = {
-                "format": {"type": "json_schema", "schema": request.output_schema}
+                "format": {
+                    "type": "json_schema",
+                    "schema": codec.wire if codec else request.output_schema,
+                }
             }
         if request.tools:
             body["tools"] = [
@@ -128,8 +147,11 @@ class AnthropicProvider(HTTPProvider):
         )
         usage = result.get("usage") or {}
         content = result.get("content", [])
+        text = "".join(part["text"] for part in content if part.get("type") == "text")
+        if codec and codec.has_maps and result.get("stop_reason") == "end_turn":
+            text = json.dumps(codec.convert(json.loads(text)), ensure_ascii=False)
         return LLMResponse(
-            text="".join(part["text"] for part in content if part.get("type") == "text"),
+            text=text,
             usage_available=bool(usage),
             input_tokens=usage.get("input_tokens", 0),
             output_tokens=usage.get("output_tokens", 0),
