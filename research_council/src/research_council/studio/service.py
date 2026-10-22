@@ -28,6 +28,21 @@ class StudioService:
         self.repository = open_repository(self.workspace)
         self.store = StudioStore(self.workspace)
         self.jobs: dict[UUID, asyncio.Task[None]] = {}
+        for run in self.repository.list_all("research_runs", ResearchRun):
+            try:
+                self.project(run.project_id)
+            except KeyError:
+                self.save_project(
+                    StudioProject(
+                        id=run.project_id,
+                        title=run.question.topic[:200],
+                        topic=run.question.topic,
+                        constraints=run.question.constraints,
+                        practice=run.provenance != "live",
+                        mode=run.mode,
+                        budget=run.budget_usd,
+                    )
+                )
 
     def new_run(self, identity: UUID, confirmation: str = "") -> dict[str, Any]:
         project = self.project(identity)
@@ -197,7 +212,11 @@ class StudioService:
             self.store.put(
                 "worker_error",
                 str(identity),
-                {"error_type": type(exc).__name__, "at": utcnow().isoformat()},
+                {
+                    "run_id": str(identity),
+                    "error_type": type(exc).__name__,
+                    "at": utcnow().isoformat(),
+                },
             )
 
     def control(self, identity: UUID, command: str) -> dict[str, Any]:
@@ -208,6 +227,8 @@ class StudioService:
         return {"command": command, "checkpoint_boundary": True}
 
     def decide(self, identity: UUID, decision: Decision) -> dict[str, Any]:
+        if identity in self.jobs and not self.jobs[identity].done():
+            raise RuntimeError("Wait for the active checkpoint operation")
         run = self.repository.get_run(identity)
         settings = settings_for_run(self.repository, identity)
         question = None
@@ -265,6 +286,7 @@ class StudioService:
                 if key.startswith("operation_")
             },
             "control": self.command(identity),
+            "worker_active": identity in self.jobs and not self.jobs[identity].done(),
             "observed_map": (
                 state.knowledge_map or build_knowledge_map(run.question.topic, state)
             ).model_dump(mode="json"),

@@ -162,6 +162,10 @@ async def discuss(
             canonical_mutation=False,
         )
         return service.store.put("interaction", identity, record)
+    except Exception as exc:
+        record.update(status="FAILED", error_type=type(exc).__name__, canonical_mutation=False)
+        service.store.put("interaction", identity, record)
+        raise
     finally:
         from contextlib import suppress
 

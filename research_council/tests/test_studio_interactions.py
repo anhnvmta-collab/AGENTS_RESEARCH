@@ -46,7 +46,7 @@ async def test_discussion_is_read_only_and_action_requires_review(tmp_path):
 
 
 def test_sse_replay_is_persisted_and_safe(tmp_path):
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         project = client.post(
             "/api/projects", json={"title": "Practice FHSS", "topic": "Synthetic FHSS"}
         ).json()

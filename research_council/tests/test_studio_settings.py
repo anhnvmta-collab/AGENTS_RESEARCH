@@ -13,7 +13,7 @@ def test_settings_preflight_and_real_confirmation_are_offline(tmp_path, monkeypa
     monkeypatch.setattr("httpx.AsyncClient.post", forbidden)
     for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]:
         monkeypatch.setenv(key, "sensitive-offline-sentinel")
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         response = client.get("/api/settings")
         assert "sensitive-offline-sentinel" not in response.text
         config = response.json()["settings"]

@@ -149,6 +149,14 @@ def export_zip(service: StudioService, identity: UUID) -> bytes:
         )
         archive.writestr(
             "studio_practice_advisory.json",
-            json.dumps(service.store.list("practice_design"), ensure_ascii=False, indent=2),
+            json.dumps(
+                [
+                    row
+                    for row in service.store.list("practice_design")
+                    if row["run_id"] == str(identity)
+                ],
+                ensure_ascii=False,
+                indent=2,
+            ),
         )
     return output.getvalue()

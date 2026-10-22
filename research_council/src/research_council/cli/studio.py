@@ -10,10 +10,14 @@ def register_studio_commands(app: typer.Typer) -> None:
 
     def serve(workspace: Path, port: int) -> None:
         import uvicorn
+        from dotenv import load_dotenv
 
         from research_council.studio.app import create_app
 
-        uvicorn.run(create_app(workspace), host="127.0.0.1", port=port)
+        load_dotenv()
+        uvicorn.run(
+            create_app(workspace, origin=f"http://127.0.0.1:{port}"), host="127.0.0.1", port=port
+        )
 
     @studio.callback()
     def studio_main(

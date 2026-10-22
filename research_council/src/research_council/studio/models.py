@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from research_council.schemas.models import Mode, Schema, utcnow
 
@@ -38,6 +38,13 @@ class Decision(Schema):
     action: Literal["approve", "reject", "revise"]
     reviewer: str = Field(min_length=2, max_length=100)
     comment: str = Field(default="", max_length=4000)
+
+    @field_validator("reviewer")
+    @classmethod
+    def named_reviewer(cls, value: str) -> str:
+        if len(value.strip()) < 2:
+            raise ValueError("A reviewer name is required")
+        return value.strip()
 
 
 class Interaction(Schema):

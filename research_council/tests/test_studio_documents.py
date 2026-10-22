@@ -31,7 +31,7 @@ def pdf_bytes():
 
 
 def test_uploads_are_bounded_parsed_and_contained(tmp_path, monkeypatch):
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         project = client.post(
             "/api/projects", json={"title": "PDF study", "topic": "Uploaded PDF study"}
         ).json()

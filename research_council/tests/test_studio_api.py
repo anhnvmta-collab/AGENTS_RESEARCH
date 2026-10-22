@@ -4,7 +4,7 @@ from research_council.studio.app import create_app
 
 
 def test_projects_persist_and_validate(tmp_path):
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         assert client.get("/api/health").status_code == 200
         assert client.post("/api/projects", json={"title": "x", "topic": "x"}).status_code == 422
         project = client.post(
@@ -14,12 +14,12 @@ def test_projects_persist_and_validate(tmp_path):
         assert client.get("/api/projects/" + project["id"]).json()["topic"] == "Phân tích FHSS"
         assert client.get("/api/dashboard").json()["papers"] == 0
         assert client.get("/api/projects/00000000-0000-0000-0000-000000000000").status_code == 404
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         assert len(client.get("/api/projects").json()) == 1
 
 
 def test_local_security(tmp_path):
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         assert client.get("/api/health", headers={"host": "evil.test"}).status_code == 400
         assert (
             client.post(

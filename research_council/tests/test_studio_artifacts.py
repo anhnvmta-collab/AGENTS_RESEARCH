@@ -7,7 +7,7 @@ from research_council.studio.app import create_app
 
 
 def test_revision_and_draft_never_certify_science(tmp_path):
-    with TestClient(create_app(tmp_path)) as client:
+    with TestClient(create_app(tmp_path), base_url="http://127.0.0.1") as client:
         project = client.post(
             "/api/projects", json={"title": "Draft study", "topic": "Synthetic draft study"}
         ).json()

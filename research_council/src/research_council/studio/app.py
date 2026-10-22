@@ -6,11 +6,13 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import FastAPI, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from research_council.core.config import Settings
+from research_council.core.human_review import ScientificAttestation
 from research_council.studio.models import (
     Decision,
     Interaction,
@@ -18,13 +20,17 @@ from research_council.studio.models import (
     StartRequest,
     StudioProject,
 )
+from research_council.studio.security import BodyLimitMiddleware
 from research_council.studio.service import StudioService
 
 ORIGINS = {"http://127.0.0.1:5173", "http://localhost:5173", "http://127.0.0.1:8765"}
 
 
-def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
+def create_app(
+    workspace: Path = Path("workspace/studio"), *, origin: str = "http://127.0.0.1:8765"
+) -> FastAPI:
     service = StudioService(workspace)
+    origins = ORIGINS | {origin}
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
@@ -39,12 +45,10 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
 
     app = FastAPI(title="Research Council Studio", lifespan=lifespan)
     app.state.service = service
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"]
-    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=sorted(ORIGINS),
+        allow_origins=sorted(origins),
         allow_methods=["GET", "POST", "PATCH", "PUT"],
         allow_headers=["Content-Type", "Last-Event-ID"],
     )
@@ -53,9 +57,29 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     async def local_origin(request: Request, call_next: Any) -> Any:
         if request.method not in {"GET", "HEAD", "OPTIONS"} and request.headers.get(
             "origin"
-        ) not in {*ORIGINS, None}:
+        ) not in {*origins, None}:
             return JSONResponse({"detail": "Untrusted browser origin"}, status_code=403)
-        return await call_next(request)
+        if (
+            request.method not in {"GET", "HEAD", "OPTIONS"}
+            and request.headers.get("sec-fetch-site") == "cross-site"
+        ):
+            return JSONResponse({"detail": "Cross-site writes are refused"}, status_code=403)
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        )
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+        return JSONResponse(
+            {"detail": "Request validation failed; check required fields and limits"},
+            status_code=422,
+        )
 
     @app.exception_handler(KeyError)
     async def missing(request: Request, exc: KeyError) -> JSONResponse:
@@ -201,6 +225,31 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     def agents(identity: UUID) -> list[dict[str, Any]]:
         return service.agents(identity)
 
+    @app.get("/api/runs/{identity}/decisions")
+    def decisions(identity: UUID) -> Any:
+        service.repository.get_run(identity)
+        return [row for row in service.store.list("decision") if row["run_id"] == str(identity)]
+
+    @app.post("/api/runs/{identity}/attest")
+    def attest(identity: UUID, request: ScientificAttestation) -> Any:
+        from uuid import uuid4
+
+        from research_council.core.human_review import attest_claim
+        from research_council.schemas.models import utcnow
+
+        attest_claim(service.repository, identity, request)
+        service.store.put(
+            "decision",
+            str(uuid4()),
+            {
+                **request.model_dump(mode="json"),
+                "kind": "SCIENTIFIC_ATTESTATION",
+                "run_id": str(identity),
+                "at": utcnow().isoformat(),
+            },
+        )
+        return service.snapshot(identity)
+
     @app.get("/api/runs/{identity}/paper")
     def paper(identity: UUID) -> Any:
         from research_council.studio.artifacts import paper_sections
@@ -283,9 +332,12 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
         from research_council.studio.events import encode_event, events
 
         service.repository.get_run(identity)
+        raw_last = request.headers.get("last-event-id", "0")
+        if not raw_last.isdigit() or len(raw_last) > 15:
+            raise ValueError("Invalid event cursor")
 
         async def generate():  # type: ignore[no-untyped-def]
-            last = int(request.headers.get("last-event-id", "0"))
+            last = int(raw_last)
             while not await request.is_disconnected():
                 for event in events(service, identity):
                     if event["id"] > last:
@@ -302,4 +354,18 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    frontend = Path(__file__).parent / "static"
+    if not (frontend / "index.html").is_file():
+        frontend = Path(__file__).parents[3] / "studio/frontend/dist"
+    if (frontend / "index.html").is_file():
+        app.mount("/assets", StaticFiles(directory=frontend / "assets"), name="assets")
+
+        @app.get("/", include_in_schema=False)
+        def index() -> Any:
+            return FileResponse(frontend / "index.html")
+
+    app.add_middleware(BodyLimitMiddleware)
     return app
