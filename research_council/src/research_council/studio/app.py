@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from research_council.studio.models import Decision, StartRequest, StudioProject
+from research_council.studio.models import Decision, Interaction, StartRequest, StudioProject
 from research_council.studio.service import StudioService
 
 ORIGINS = {"http://127.0.0.1:5173", "http://localhost:5173", "http://127.0.0.1:8765"}
@@ -139,5 +139,60 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     @app.post("/api/runs/{identity}/approve")
     def decide(identity: UUID, decision: Decision) -> dict[str, Any]:
         return service.decide(identity, decision)
+
+    @app.get("/api/runs/{identity}/agents")
+    def agents(identity: UUID) -> list[dict[str, Any]]:
+        return service.agents(identity)
+
+    @app.post("/api/agents/{agent}/discuss")
+    async def discuss(agent: str, request: Interaction) -> dict[str, Any]:
+        from research_council.studio.interactions import discuss
+
+        return await discuss(service, agent, request)
+
+    @app.post("/api/agents/{agent}/propose-action")
+    def propose(agent: str, request: Interaction) -> dict[str, Any]:
+        from research_council.studio.interactions import propose
+
+        return propose(service, agent, request)
+
+    @app.post("/api/proposals/{identity}/approve")
+    async def approve_proposal(identity: UUID, decision: Decision) -> dict[str, Any]:
+        from research_council.studio.interactions import approve_proposal
+
+        return await approve_proposal(service, identity, decision)
+
+    @app.get("/api/runs/{identity}/interactions")
+    def interactions(identity: UUID) -> list[dict[str, Any]]:
+        service.repository.get_run(identity)
+        return [row for row in service.store.list("interaction") if row["run_id"] == str(identity)]
+
+    @app.get("/api/runs/{identity}/events")
+    async def event_stream(identity: UUID, request: Request, once: bool = False) -> Any:
+        import asyncio
+
+        from fastapi.responses import StreamingResponse
+
+        from research_council.studio.events import encode_event, events
+
+        service.repository.get_run(identity)
+
+        async def generate():  # type: ignore[no-untyped-def]
+            last = int(request.headers.get("last-event-id", "0"))
+            while not await request.is_disconnected():
+                for event in events(service, identity):
+                    if event["id"] > last:
+                        yield encode_event(event)
+                        last = event["id"]
+                if once:
+                    break
+                yield ": heartbeat\n\n"
+                await asyncio.sleep(0.5)
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     return app

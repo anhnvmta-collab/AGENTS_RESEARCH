@@ -160,7 +160,67 @@ class StudioService:
                 for item in self.repository.list_model_executions(identity)
             ],
             "srl": "SRL-0",  # Studio cannot attest scientific readiness.
+            "operations": {
+                key.removeprefix("operation_"): value
+                for key, value in self.repository.artifacts(identity).items()
+                if key.startswith("operation_")
+            },
+            "control": self.command(identity),
         }
+
+    def agents(self, identity: UUID) -> list[dict[str, Any]]:
+        from research_council import agents
+        from research_council.studio.interactions import agent_class
+
+        snapshot = self.snapshot(identity)
+        settings = settings_for_run(self.repository, identity)
+        result = []
+        for name in agents.__all__:
+            role = agent_class(name)
+            executions = [item for item in snapshot["executions"] if item["agent_id"] == name]
+            models = [item for item in snapshot["models"] if item["agent_id"] == name]
+            routes = [
+                route.model_dump(mode="json")
+                for route in settings.role_routes.get(name, settings.models[role.task_profile])
+                if route.enabled
+            ]
+            latest = executions[-1] if executions else None
+            status = (
+                "COMPLETED"
+                if latest and latest["status"] == "SUCCESS"
+                else latest["status"]
+                if latest
+                else "IDLE"
+            )
+            result.append(
+                {
+                    "name": name,
+                    "role": role.role,
+                    "profile": role.task_profile.value,
+                    "routes": routes,
+                    "status": status,
+                    "tasks_completed": sum(item["status"] == "SUCCESS" for item in executions),
+                    "average_latency": sum(item["latency"] for item in executions)
+                    / max(1, len(executions)),
+                    "cost": sum(item["estimated_cost"] or 0 for item in models),
+                    "errors": sum(item["status"] == "FAILED" for item in executions),
+                    "allowed_tools": sorted(role.allowed_tools),
+                    "input_contract": role.input_schema.model_json_schema(),
+                    "output_contract": role.output_schema.model_json_schema(),
+                    "executions": executions,
+                    "models": models,
+                    "operations": {
+                        item["execution_id"]: snapshot["operations"].get(item["execution_id"], {})
+                        for item in executions
+                    },
+                    "related_evidence": [
+                        item
+                        for item in snapshot["state"]["evidence"]
+                        if item["extraction_agent"] == name
+                    ],
+                }
+            )
+        return result
 
     def dashboard(self) -> dict[str, Any]:
         runs = self.repository.list_all("research_runs", ResearchRun)

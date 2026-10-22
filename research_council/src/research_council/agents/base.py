@@ -5,6 +5,8 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, ClassVar, Generic, TypeVar
 
+from pydantic import Field
+
 from research_council.core.context import build_context
 from research_council.core.routing import ModelRouter
 from research_council.core.tracing import TraceEvent, TraceSink
@@ -13,6 +15,17 @@ from research_council.tools.registry import ToolRegistry
 
 InputT = TypeVar("InputT", bound=Schema)
 OutputT = TypeVar("OutputT", bound=Schema)
+
+
+class OperationalSummary(Schema):
+    """Observable contract metadata only; never prompts or hidden model reasoning."""
+
+    input_contract: str
+    output_contract: str
+    input_counts: dict[str, int] = Field(default_factory=dict)
+    output_counts: dict[str, int] = Field(default_factory=dict)
+    paper_ids: list[str] = Field(default_factory=list)
+    tools_used: list[str] = Field(default_factory=list)
 
 
 class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
@@ -39,6 +52,7 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
         self.tools = tools or ToolRegistry()
         self.trace = trace
         self.avoid_provider = avoid_provider
+        self.tools_used: list[str] = []
 
     def validate_input(self, value: InputT) -> InputT:
         return self.input_schema.model_validate(value.model_dump())
@@ -74,6 +88,16 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
         self.router.repository.save(
             "agent_executions", execution.execution_id, execution, self.router.run_id
         )
+        payload = value.model_dump(mode="json")
+        observation = OperationalSummary(
+            input_contract=self.input_schema.__name__,
+            output_contract=self.output_schema.__name__,
+            input_counts={
+                key: len(item) for key, item in payload.items() if isinstance(item, list)
+            },
+            paper_ids=[str(item.get("paper_id")) for item in payload.get("papers", [])]
+            + ([str(payload["paper"]["paper_id"])] if "paper" in payload else []),
+        )
         try:
             validated = self.validate_input(value)
             result = self.validate_output(await self.execute(validated))
@@ -83,6 +107,11 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
                     update={"model_execution_id": model_execution.execution_id}
                 )
             execution.status = "SUCCESS"
+            observation.output_counts = {
+                key: len(item)
+                for key, item in result.model_dump().items()
+                if isinstance(item, list)
+            }
             return result
         except Exception as exc:
             execution.status = "FAILED"
@@ -91,6 +120,14 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
         finally:
             execution.end_time = utcnow()
             execution.latency = perf_counter() - started
+            observation.tools_used = self.tools_used
+            self.router.repository.save(
+                "artifacts",
+                execution.execution_id,
+                observation,
+                self.router.run_id,
+                name=f"operation_{execution.execution_id}",
+            )
             self.router.repository.save(
                 "agent_executions", execution.execution_id, execution, self.router.run_id
             )
@@ -109,4 +146,5 @@ class BaseResearchAgent(ABC, Generic[InputT, OutputT]):
                 )
 
     async def invoke_tool(self, name: str, value: Schema) -> Any:
+        self.tools_used.append(name)
         return await self.tools.invoke(name, value, allowlist=self.allowed_tools)
