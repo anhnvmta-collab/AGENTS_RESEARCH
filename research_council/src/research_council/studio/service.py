@@ -62,6 +62,7 @@ class StudioService:
             demo=True,
             project=ResearchProject(project_id=identity, title=project.title, question=question),
         )
+        self.repository.checkpoint(run, {"state": WorkflowState()})
         return self.snapshot(run.run_id)
 
     def command(self, identity: UUID) -> str | None:

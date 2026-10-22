@@ -10,7 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
-from research_council.studio.models import Decision, Interaction, StartRequest, StudioProject
+from research_council.studio.models import (
+    Decision,
+    Interaction,
+    Revision,
+    StartRequest,
+    StudioProject,
+)
 from research_council.studio.service import StudioService
 
 ORIGINS = {"http://127.0.0.1:5173", "http://localhost:5173", "http://127.0.0.1:8765"}
@@ -169,6 +175,56 @@ def create_app(workspace: Path = Path("workspace/studio")) -> FastAPI:
     @app.get("/api/runs/{identity}/agents")
     def agents(identity: UUID) -> list[dict[str, Any]]:
         return service.agents(identity)
+
+    @app.get("/api/runs/{identity}/paper")
+    def paper(identity: UUID) -> Any:
+        from research_council.studio.artifacts import paper_sections
+
+        return paper_sections(service, identity)
+
+    @app.post("/api/runs/{identity}/paper/draft")
+    def draft(identity: UUID, request: Decision) -> Any:
+        from research_council.studio.artifacts import paper_sections, revision
+
+        if request.action != "approve":
+            raise ValueError("Draft requires a named request")
+        for section in paper_sections(service, identity, include_revisions=False):
+            if request.comment and request.comment != section["section"]:
+                continue
+            revision(
+                service,
+                identity,
+                Revision(
+                    kind="paper",
+                    target=section["section"],
+                    content=section["content"],
+                    reviewer=request.reviewer,
+                ),
+            )
+        return paper_sections(service, identity)
+
+    @app.get("/api/runs/{identity}/revisions")
+    def revisions(identity: UUID) -> Any:
+        service.repository.get_run(identity)
+        return [row for row in service.store.list("revision") if row["run_id"] == str(identity)]
+
+    @app.post("/api/runs/{identity}/revisions")
+    def revision(identity: UUID, request: Revision) -> Any:
+        from research_council.studio.artifacts import revision
+
+        return revision(service, identity, request)
+
+    @app.get("/api/runs/{identity}/export")
+    def export(identity: UUID) -> Any:
+        from fastapi.responses import Response
+
+        from research_council.studio.artifacts import export_zip
+
+        return Response(
+            export_zip(service, identity),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="research-{identity}.zip"'},
+        )
 
     @app.post("/api/agents/{agent}/discuss")
     async def discuss(agent: str, request: Interaction) -> dict[str, Any]:
